@@ -1,0 +1,40 @@
+{
+  "summary": "First e2e test run for SocialBoost Pro. Backend: 26/27 pytest cases pass (96%). Frontend: landing/login/register/dashboard/services/admin panel/add-funds all functional and wired to backend; role enforcement correct (demo user redirected from /admin). Two real bugs found: (1) GET /api/payments/stripe/status/{session_id} throws 500 due to emergentintegrations library pydantic validation error on metadata; (2) /new-order does not honour the ?service= query param set by clicking 'Order now' on /services — service/platform dropdowns remain empty and Place Order stays disabled.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "GET /api/payments/stripe/status/{session_id}", "issue": "Returns 500. emergentintegrations.payments.stripe.checkout.get_checkout_status raises CheckoutError because pydantic expects metadata to be a dict but receives a StripeObject. Route does not catch the error. This breaks /payment-success page and webhook polling. Proposed fix: wrap the call in try/except CheckoutError and fall back to reading our own payment_transactions record, or upgrade emergentintegrations / coerce metadata via dict() before model build.", "priority": "HIGH"}
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Services -> Order now -> New Order", "issue": "Navigating to /new-order?service=svc_<id> does NOT preset Platform/Category/Service in the form. Summary shows Service '—', Rate $0.00, Total charge $0.00 and 'Place order' button stays disabled. User has to manually reselect platform/category/service. Likely missing useSearchParams handling or effect in NewOrder.jsx.", "affected_selectors": ["[data-testid=\"order-submit-btn\"]", "Place order button"], "priority": "HIGH"}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/backend_test.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Fix Stripe status endpoint 500: handle emergentintegrations CheckoutError / metadata dict coercion in /api/payments/stripe/status/{session_id}.",
+    "Fix NewOrder.jsx to read ?service= query param and auto-select platform + category + service on mount (so clicking 'Order now' actually presets the order).",
+    "(Optional) PayPal is correctly returning 503 placeholder — document in UI that PayPal is disabled until PAYPAL_CLIENT_ID/SECRET are set."
+  ],
+  "critical_code_review_comments": [
+    "payments_router.py stripe_status: add try/except around await stripe.get_checkout_status(session_id); on CheckoutError return the last persisted payment_transactions status instead of 500.",
+    "orders_router.py enforces quantity against service['min']/service['max'] (e.g. min=500). Public service JSON exposes same. Demo user balance ($50) is comfortably above cheapest min order (~$0.01 for Reels Views 500 units) — good.",
+    "Stripe checkout amount validation correctly rejects non-allowed amounts with 400.",
+    "Auth: bcrypt $2b$ hashing + JWT HS256 + httpOnly cookies with secure=true/samesite=none set correctly. CORS lists explicit origins. seed_admin is idempotent and updates admin password if changed. Good.",
+    "get_current_user accepts cookie OR Bearer token (JWT or session_token) — flexible and correct.",
+    "Admin routes enforce role via require_admin dep; verified 401 unauth and 403 for demo user.",
+    "Consider adding a brute-force lockout on /api/auth/login (currently no rate-limiting or lockout after N fails).",
+    "Frontend 401 on initial /api/auth/me is expected when unauthenticated but prints a console error — consider silencing on 401 to keep devtools clean."
+  ],
+  "updated_files": ["/app/backend/tests/backend_test.py"],
+  "success_rate": {"backend": "96% (26/27)", "frontend": "~90% (all nav/auth/admin/add-funds work; 1 integration bug on new-order preset)"},
+  "test_credentials": "admin@socialboost.pro / Admin@12345 (admin), demo@socialboost.pro / Demo@12345 (user, $50 balance, partially spent during tests)",
+  "seed_data_creation": "None added. Tests create ephemeral TEST_ prefixed users/services/suppliers/roles and clean them up. Demo user's balance was reduced by ~$4 across test runs.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend test suite at /app/backend/tests/backend_test.py is the regression baseline. After main agent fixes the 2 bugs, re-run: (1) pytest /app/backend/tests/backend_test.py -v -k stripe_status should pass; (2) Playwright flow: login demo -> /services -> click first 'Order now' -> verify /new-order form is pre-filled and Place Order button is enabled and POST /api/orders returns 200. Demo balance may need to be topped up via admin adjust-balance if drained.",
+  "rca of the issue": "1) Stripe status 500: emergentintegrations/payments/stripe/checkout.py builds CheckoutStatusResponse(pydantic model) and passes stripe session.metadata which is a StripeObject (not a plain dict) — pydantic rejects it. The test Stripe backend is returning metadata as a StripeObject, so every status poll fails. Mitigation: in payments_router.stripe_status wrap the call in try/except and on failure, query payment_transactions collection for the stored status as a graceful fallback; or coerce session.metadata = dict(session.metadata) before building the response.\n2) NewOrder preset bug: NewOrder.jsx likely doesn't read search params on mount. Need to parse useSearchParams() for 'service', look up service in services list, then setPlatform/setCategory/setService when services arrive."
+}
