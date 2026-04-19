@@ -93,41 +93,53 @@ async def stripe_status(session_id: str, request: Request, user: dict = Depends(
         }
 
     stripe = _get_stripe(request)
-    checkout_status = await stripe.get_checkout_status(session_id)
+    checkout_status = None
+    payment_status = None
+    amount_total = int(float(tx.get("amount", 0)) * 100)
+    currency = tx.get("currency", "usd")
+    fetch_error = None
+    try:
+        checkout_status = await stripe.get_checkout_status(session_id)
+        payment_status = checkout_status.payment_status
+        amount_total = checkout_status.amount_total
+        currency = checkout_status.currency
+    except Exception as e:  # noqa: BLE001
+        fetch_error = str(e)[:200]
 
     new_status = tx["status"]
-    payment_status = checkout_status.payment_status
-    if checkout_status.status == "expired":
-        new_status = "expired"
-    elif payment_status == "paid":
-        new_status = "paid"
-    elif checkout_status.status == "complete":
-        new_status = "paid" if payment_status == "paid" else "pending"
-    else:
-        new_status = "pending"
+    if checkout_status is not None:
+        if checkout_status.status == "expired":
+            new_status = "expired"
+        elif payment_status == "paid":
+            new_status = "paid"
+        elif checkout_status.status == "complete":
+            new_status = "paid" if payment_status == "paid" else "pending"
+        else:
+            new_status = "pending"
 
-    # Idempotent credit: only credit if we transition into "paid" and it wasn't paid before
-    if new_status == "paid" and tx["status"] != "paid":
-        await db.users.update_one(
-            {"user_id": tx["user_id"]},
-            {"$inc": {"balance": float(tx["amount"])}},
+        # Idempotent credit: only credit if we transition into "paid"
+        if new_status == "paid" and tx["status"] != "paid":
+            await db.users.update_one(
+                {"user_id": tx["user_id"]},
+                {"$inc": {"balance": float(tx["amount"])}},
+            )
+
+        await db.payment_transactions.update_one(
+            {"session_id": session_id},
+            {"$set": {
+                "status": new_status,
+                "payment_status": payment_status,
+                "updated_at": now_utc().isoformat(),
+            }},
         )
-
-    await db.payment_transactions.update_one(
-        {"session_id": session_id},
-        {"$set": {
-            "status": new_status,
-            "payment_status": payment_status,
-            "updated_at": now_utc().isoformat(),
-        }},
-    )
 
     return {
         "session_id": session_id,
         "status": new_status,
         "payment_status": payment_status,
-        "amount_total": checkout_status.amount_total,
-        "currency": checkout_status.currency,
+        "amount_total": amount_total,
+        "currency": currency,
+        "error": fetch_error,
     }
 
 

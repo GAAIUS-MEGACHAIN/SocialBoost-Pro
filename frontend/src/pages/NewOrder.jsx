@@ -16,27 +16,32 @@ export default function NewOrder() {
   const [services, setServices] = useState([]);
   const [platform, setPlatform] = useState("");
   const [category, setCategory] = useState("");
-  const [serviceId, setServiceId] = useState(params.get("service") || "");
+  const [serviceId, setServiceId] = useState("");
   const [link, setLink] = useState("");
   const [quantity, setQuantity] = useState(100);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     (async () => {
-      const { data } = await api.get("/services");
-      setServices(data);
-      if (params.get("service")) {
-        const preset = data.find((s) => s.service_id === params.get("service"));
-        if (preset) {
-          setPlatform(preset.platform);
-          setCategory(preset.category);
-          setServiceId(preset.service_id);
-          setQuantity(preset.min);
-        }
-      }
+      try {
+        const { data } = await api.get("/services");
+        setServices(data);
+      } catch {}
     })();
-    // eslint-disable-next-line
   }, []);
+
+  // Preset from ?service= query param once services are loaded
+  useEffect(() => {
+    const sid = params.get("service");
+    if (!sid || services.length === 0) return;
+    const preset = services.find((s) => s.service_id === sid);
+    if (preset) {
+      setPlatform(preset.platform);
+      setCategory(preset.category);
+      setServiceId(preset.service_id);
+      setQuantity(preset.min);
+    }
+  }, [services, params]);
 
   const platforms = useMemo(() => [...new Set(services.map((s) => s.platform))], [services]);
   const categories = useMemo(() => {
@@ -102,7 +107,7 @@ export default function NewOrder() {
 
           <div>
             <Label className="text-xs uppercase tracking-wider">Service</Label>
-            <Select value={serviceId} onValueChange={(v) => { setServiceId(v); const s = services.find(x => x.service_id === v); if (s) setQuantity(s.min); }} disabled={!category && !platform}>
+            <Select value={serviceId} onValueChange={(v) => { setServiceId(v); const s = services.find(x => x.service_id === v); if (s) setQuantity(s.min); }} disabled={!platform || !category}>
               <SelectTrigger className="rounded-sm h-11 mt-2" data-testid="order-service-select"><SelectValue placeholder="Choose service" /></SelectTrigger>
               <SelectContent>
                 {filteredServices.map((s) => (
@@ -126,12 +131,12 @@ export default function NewOrder() {
           </div>
         </div>
 
-        <div className="border border-border bg-foreground text-background rounded-sm p-6 h-fit sticky top-6">
+        <div className="border border-border bg-foreground text-background rounded-sm p-6 h-fit md:sticky md:top-6">
           <div className="text-[10px] uppercase tracking-widest opacity-60">Summary</div>
           <div className="mt-6 space-y-4">
             <div>
               <div className="text-xs opacity-60">Service</div>
-              <div className="text-sm mt-1 line-clamp-2">{selected?.name || "—"}</div>
+              <div className="text-sm mt-1 line-clamp-2" data-testid="order-summary-service">{selected?.name || "—"}</div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
