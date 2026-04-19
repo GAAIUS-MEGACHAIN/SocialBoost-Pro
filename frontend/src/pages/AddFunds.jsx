@@ -30,7 +30,11 @@ export default function AddFunds() {
         });
         window.location.href = data.url;
       } else if (provider === "paypal") {
-        await api.post("/payments/paypal/checkout");
+        const { data } = await api.post("/payments/paypal/checkout", {
+          amount: Number(amount),
+          origin_url: window.location.origin,
+        });
+        window.location.href = data.url;
       }
     } catch (err) {
       toast.error(formatApiError(err.response?.data?.detail) || err.message);
@@ -81,10 +85,10 @@ export default function AddFunds() {
             </TabsContent>
             <TabsContent value="paypal" className="mt-5 space-y-4">
               <div className="text-sm text-muted-foreground">
-                Add your PayPal <span className="font-mono">PAYPAL_CLIENT_ID</span> and <span className="font-mono">PAYPAL_SECRET</span> in backend env to enable.
+                You'll be redirected to PayPal to approve the payment. Funds are credited instantly on capture.
               </div>
               <Button onClick={() => pay("paypal")} disabled={loading} variant="outline" className="w-full rounded-sm h-12 border-foreground/30" data-testid="pay-paypal-button">
-                <FaPaypal className="w-4 h-4 mr-2" /> {loading ? "…" : "Continue with PayPal"}
+                <FaPaypal className="w-4 h-4 mr-2" /> {loading ? "…" : `Pay $${amount} with PayPal`}
               </Button>
             </TabsContent>
           </Tabs>

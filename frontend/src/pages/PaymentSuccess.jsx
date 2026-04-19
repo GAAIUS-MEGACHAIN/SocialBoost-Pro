@@ -3,11 +3,12 @@ import { useSearchParams, Link } from "react-router-dom";
 import { api, money } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, XCircle, Loader2, Wallet } from "lucide-react";
+import { CheckCircle2, XCircle, Loader2 } from "lucide-react";
 
 export default function PaymentSuccess() {
   const [params] = useSearchParams();
-  const sessionId = params.get("session_id");
+  const provider = params.get("provider") || "stripe";
+  const sessionId = params.get("session_id") || params.get("token");
   const { refresh } = useAuth();
   const [state, setState] = useState({ status: "pending", amount: null, msg: "Checking payment status…" });
   const attempts = useRef(0);
@@ -22,7 +23,10 @@ export default function PaymentSuccess() {
       if (done.current) return;
       attempts.current += 1;
       try {
-        const { data } = await api.get(`/payments/stripe/status/${sessionId}`);
+        const endpoint = provider === "paypal"
+          ? `/payments/paypal/status/${sessionId}`
+          : `/payments/stripe/status/${sessionId}`;
+        const { data } = await api.get(endpoint);
         if (data.status === "paid") {
           done.current = true;
           setState({ status: "paid", amount: (data.amount_total || 0) / 100, msg: "Payment confirmed" });
@@ -50,7 +54,7 @@ export default function PaymentSuccess() {
       }
     };
     poll();
-  }, [sessionId, refresh]);
+  }, [sessionId, provider, refresh]);
 
   const icon = state.status === "paid" ? CheckCircle2 : state.status === "failed" ? XCircle : Loader2;
   const color = state.status === "paid" ? "text-emerald-600" : state.status === "failed" ? "text-red-600" : "text-muted-foreground";
@@ -61,6 +65,7 @@ export default function PaymentSuccess() {
         {React.createElement(icon, { className: `w-16 h-16 mx-auto ${color} ${state.status === "pending" ? "animate-spin" : ""}` })}
         <h2 className="font-display text-4xl tracking-tighter mt-6">{state.status === "paid" ? "Funds added" : state.status === "failed" ? "Payment failed" : "Processing"}</h2>
         <p className="text-muted-foreground mt-3 text-sm" data-testid="payment-status-message">{state.msg}</p>
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-2">via {provider}</div>
         {state.amount && <div className="mt-8 font-display text-6xl tracking-tighter text-signal">{money(state.amount)}</div>}
         <div className="mt-10 flex gap-3 justify-center">
           <Link to="/dashboard"><Button className="rounded-sm bg-foreground text-background hover:bg-signal" data-testid="back-to-dashboard-button">Back to dashboard</Button></Link>

@@ -17,6 +17,7 @@ import AddFunds from "./pages/AddFunds";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import Transactions from "./pages/Transactions";
 import AdminPanel from "./pages/admin/AdminPanel";
+import Support from "./pages/Support";
 
 function Router() {
   const location = useLocation();
@@ -43,6 +44,8 @@ function Router() {
         <Route path="/orders" element={<OrdersList />} />
         <Route path="/add-funds" element={<AddFunds />} />
         <Route path="/transactions" element={<Transactions />} />
+        <Route path="/support" element={<Support />} />
+        <Route path="/support/:ticketId" element={<Support />} />
         <Route path="/payment/success" element={<PaymentSuccess />} />
       </Route>
 

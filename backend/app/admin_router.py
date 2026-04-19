@@ -242,6 +242,117 @@ async def delete_supplier(supplier_id: str, admin: dict = Depends(require_admin)
     return {"deleted": True}
 
 
+@router.post("/suppliers/{supplier_id}/import-services")
+async def import_supplier_services(
+    supplier_id: str,
+    payload: dict = None,
+    admin: dict = Depends(require_admin),
+):
+    """Call supplier's action=services and import each service into our catalog.
+    Body (optional): { "markup": 2.0 }  — multiplier applied to supplier rate (default 2x).
+    Existing imports (matched by supplier_id + supplier_service_id) are updated, not duplicated.
+    """
+    import httpx
+    db = get_db()
+    supplier = await db.suppliers.find_one({"supplier_id": supplier_id}, {"_id": 0})
+    if not supplier:
+        raise HTTPException(status_code=404, detail="Supplier not found")
+
+    markup = 2.0
+    if payload and isinstance(payload.get("markup"), (int, float)) and payload["markup"] > 0:
+        markup = float(payload["markup"])
+
+    # For mock supplier, "import" by copying seeded services already present (idempotent); just return summary.
+    if supplier.get("is_mock"):
+        count = await db.services.count_documents({"supplier_id": supplier_id})
+        return {"imported": 0, "updated": 0, "skipped": count, "note": "Mock supplier already seeded; nothing to import."}
+
+    try:
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.post(
+                supplier["api_url"],
+                data={"key": supplier["api_key"], "action": "services"},
+            )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"Supplier connection error: {str(e)[:200]}")
+
+    if r.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"Supplier returned {r.status_code}: {r.text[:200]}")
+    try:
+        data = r.json()
+    except Exception:
+        raise HTTPException(status_code=502, detail=f"Supplier returned non-JSON: {r.text[:200]}")
+
+    if not isinstance(data, list):
+        raise HTTPException(status_code=502, detail="Expected a JSON array of services from supplier")
+
+    def _category_from(raw: str) -> tuple:
+        """Guess platform+category from supplier category string like 'Instagram Followers'."""
+        s = (raw or "").lower()
+        platform = "other"
+        for p in ("instagram", "tiktok", "facebook", "twitter", "x ", "youtube"):
+            if p.strip() in s:
+                platform = "twitter" if p.strip() in ("x", "twitter") else p.strip()
+                break
+        category = "Other"
+        for c in ("followers", "likes", "views", "comments", "shares", "subscribers"):
+            if c in s:
+                category = c.title()
+                break
+        return platform, category
+
+    imported = 0
+    updated = 0
+    for item in data:
+        try:
+            sup_sid = str(item.get("service"))
+            name = str(item.get("name", "Unnamed"))
+            supplier_rate = float(item.get("rate", 0))
+            rate = round(supplier_rate * markup, 4)
+            mn = int(float(item.get("min", 50)))
+            mx = int(float(item.get("max", 10000)))
+            stype = str(item.get("type", "Default"))
+            cat_raw = str(item.get("category", ""))
+            platform, category = _category_from(cat_raw or name)
+            existing = await db.services.find_one(
+                {"supplier_id": supplier_id, "supplier_service_id": sup_sid},
+                {"_id": 0, "service_id": 1},
+            )
+            if existing:
+                await db.services.update_one(
+                    {"service_id": existing["service_id"]},
+                    {"$set": {
+                        "name": name, "rate": rate, "supplier_rate": supplier_rate,
+                        "min": mn, "max": mx, "type": stype,
+                        "platform": platform, "category": category,
+                    }},
+                )
+                updated += 1
+            else:
+                import uuid as _uuid
+                await db.services.insert_one({
+                    "service_id": f"svc_{_uuid.uuid4().hex[:12]}",
+                    "supplier_id": supplier_id,
+                    "supplier_service_id": sup_sid,
+                    "platform": platform,
+                    "category": category,
+                    "name": name,
+                    "description": f"Imported from {supplier['name']}",
+                    "type": stype,
+                    "rate": rate,
+                    "supplier_rate": supplier_rate,
+                    "min": mn,
+                    "max": mx,
+                    "active": True,
+                    "created_at": now_utc().isoformat(),
+                })
+                imported += 1
+        except Exception:
+            continue
+
+    return {"imported": imported, "updated": updated, "markup": markup, "total": imported + updated}
+
+
 # ---------- Services ----------
 @router.get("/services")
 async def admin_list_services(admin: dict = Depends(require_admin)):

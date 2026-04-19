@@ -225,13 +225,18 @@ class TestPayments:
         data = r.json()
         assert "status" in data or "payment_status" in data
 
-    def test_paypal_placeholder(self, demo_session):
+    def test_paypal_live_checkout(self, demo_session):
+        # PayPal is now live (sandbox) — expect 200 with approval URL
         r = demo_session.post(
             f"{API}/payments/paypal/checkout",
             json={"amount": 25, "origin_url": BASE_URL},
-            timeout=15,
+            timeout=30,
         )
-        assert r.status_code == 503
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data.get("provider") == "paypal"
+        assert "url" in data and data["url"].startswith("https://www.sandbox.paypal.com")
+        assert "session_id" in data
 
 
 # ---------------- Admin authorization ----------------

@@ -123,6 +123,16 @@ async def stripe_status(session_id: str, request: Request, user: dict = Depends(
                 {"user_id": tx["user_id"]},
                 {"$inc": {"balance": float(tx["amount"])}},
             )
+            await db.notifications.insert_one({
+                "notif_id": f"ntf_{uuid.uuid4().hex[:12]}",
+                "user_id": tx["user_id"],
+                "type": "payment",
+                "title": "Payment received",
+                "message": f"${float(tx['amount']):.2f} added to your wallet via Stripe.",
+                "link": "/transactions",
+                "read": False,
+                "created_at": now_utc().isoformat(),
+            })
 
         await db.payment_transactions.update_one(
             {"session_id": session_id},
@@ -144,15 +154,153 @@ async def stripe_status(session_id: str, request: Request, user: dict = Depends(
 
 
 @router.post("/paypal/checkout")
-async def paypal_checkout(user: dict = Depends(require_active)):
-    """PayPal placeholder - awaiting credentials from user."""
-    client_id = os.environ.get("PAYPAL_CLIENT_ID", "")
-    if not client_id:
+async def paypal_checkout(
+    request: Request,
+    data: StripeCheckoutRequest,
+    user: dict = Depends(require_active),
+):
+    """Create a PayPal order and return the approval URL for redirect."""
+    from . import paypal
+    if not paypal.is_configured():
         raise HTTPException(
             status_code=503,
             detail="PayPal not yet configured. Add PAYPAL_CLIENT_ID and PAYPAL_SECRET to backend .env to enable.",
         )
-    raise HTTPException(status_code=501, detail="PayPal integration coming soon.")
+    allowed = {5.0, 10.0, 25.0, 50.0, 100.0, 250.0, 500.0, 1000.0}
+    amount = float(data.amount)
+    if amount not in allowed:
+        raise HTTPException(status_code=400, detail=f"Amount must be one of: {sorted(allowed)}")
+
+    origin = data.origin_url.rstrip("/")
+    return_url = f"{origin}/payment/success?provider=paypal"
+    cancel_url = f"{origin}/add-funds?canceled=1"
+
+    tx_id = f"tx_{uuid.uuid4().hex[:12]}"
+    try:
+        order = await paypal.create_order(
+            amount=amount,
+            currency="USD",
+            return_url=return_url,
+            cancel_url=cancel_url,
+            metadata={"user_id": user["user_id"], "tx_id": tx_id},
+        )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"PayPal error: {str(e)[:300]}")
+
+    db = get_db()
+    await db.payment_transactions.insert_one({
+        "tx_id": tx_id,
+        "user_id": user["user_id"],
+        "provider": "paypal",
+        "session_id": order["id"],
+        "amount": amount,
+        "currency": "usd",
+        "status": "initiated",
+        "payment_status": None,
+        "metadata": {"purpose": "wallet_topup", "paypal_order_id": order["id"]},
+        "created_at": now_utc().isoformat(),
+        "updated_at": now_utc().isoformat(),
+    })
+    return {"url": order["approve_url"], "session_id": order["id"], "provider": "paypal"}
+
+
+@router.get("/paypal/status/{order_id}")
+async def paypal_status(order_id: str, user: dict = Depends(get_current_user)):
+    """Check PayPal order status. If APPROVED and not yet captured, capture and credit."""
+    from . import paypal
+    db = get_db()
+    tx = await db.payment_transactions.find_one({"session_id": order_id, "provider": "paypal"}, {"_id": 0})
+    if not tx:
+        raise HTTPException(status_code=404, detail="Transaction not found")
+    if tx["user_id"] != user["user_id"] and user.get("role") not in ("admin", "manager"):
+        raise HTTPException(status_code=403, detail="Not your transaction")
+
+    if tx["status"] == "paid":
+        return {
+            "session_id": order_id,
+            "status": "paid",
+            "payment_status": "paid",
+            "amount_total": int(float(tx["amount"]) * 100),
+            "currency": tx.get("currency", "usd"),
+            "already_processed": True,
+        }
+
+    try:
+        order = await paypal.get_order(order_id)
+    except Exception as e:  # noqa: BLE001
+        return {
+            "session_id": order_id,
+            "status": tx["status"],
+            "payment_status": None,
+            "amount_total": int(float(tx["amount"]) * 100),
+            "currency": tx.get("currency", "usd"),
+            "error": str(e)[:200],
+        }
+
+    status_raw = (order.get("status") or "").upper()
+    new_status = tx["status"]
+    payment_status = None
+
+    if status_raw == "APPROVED":
+        # Capture now
+        try:
+            captured = await paypal.capture_order(order_id)
+            cap_status = (captured.get("status") or "").upper()
+            if cap_status == "COMPLETED":
+                new_status = "paid"
+                payment_status = "paid"
+            else:
+                new_status = cap_status.lower() or "pending"
+        except Exception as e:  # noqa: BLE001
+            return {
+                "session_id": order_id,
+                "status": tx["status"],
+                "payment_status": None,
+                "amount_total": int(float(tx["amount"]) * 100),
+                "currency": tx.get("currency", "usd"),
+                "error": f"capture failed: {str(e)[:200]}",
+            }
+    elif status_raw == "COMPLETED":
+        new_status = "paid"
+        payment_status = "paid"
+    elif status_raw in ("VOIDED", "EXPIRED"):
+        new_status = "expired"
+    elif status_raw == "CREATED":
+        new_status = "pending"
+    else:
+        new_status = status_raw.lower() or "pending"
+
+    # Idempotent credit
+    if new_status == "paid" and tx["status"] != "paid":
+        await db.users.update_one({"user_id": tx["user_id"]}, {"$inc": {"balance": float(tx["amount"])}})
+        # Record wallet credit notification
+        await db.notifications.insert_one({
+            "notif_id": f"ntf_{uuid.uuid4().hex[:12]}",
+            "user_id": tx["user_id"],
+            "type": "payment",
+            "title": "Payment received",
+            "message": f"${float(tx['amount']):.2f} added to your wallet via PayPal.",
+            "link": "/transactions",
+            "read": False,
+            "created_at": now_utc().isoformat(),
+        })
+
+    await db.payment_transactions.update_one(
+        {"session_id": order_id},
+        {"$set": {
+            "status": new_status,
+            "payment_status": payment_status,
+            "updated_at": now_utc().isoformat(),
+        }},
+    )
+
+    return {
+        "session_id": order_id,
+        "status": new_status,
+        "payment_status": payment_status,
+        "amount_total": int(float(tx["amount"]) * 100),
+        "currency": tx.get("currency", "usd"),
+    }
 
 
 # Separate webhook router (no auth)

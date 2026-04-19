@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, Download } from "lucide-react";
 import { toast } from "sonner";
 
 export default function AdminSuppliers() {
@@ -13,6 +13,7 @@ export default function AdminSuppliers() {
   const [open, setOpen] = useState(false);
   const [editRow, setEditRow] = useState(null);
   const [form, setForm] = useState({ name: "", api_url: "", api_key: "", notes: "" });
+  const [importing, setImporting] = useState(null);
 
   const load = async () => { try { const { data } = await api.get("/admin/suppliers"); setSuppliers(data); } catch {} };
   useEffect(() => { load(); }, []);
@@ -36,6 +37,16 @@ export default function AdminSuppliers() {
   };
   const edit = (s) => { setEditRow(s); setForm({ name: s.name, api_url: s.api_url, api_key: s.api_key, notes: s.notes || "" }); setOpen(true); };
   const newOne = () => { setEditRow(null); setForm({ name: "", api_url: "", api_key: "", notes: "" }); setOpen(true); };
+
+  const importServices = async (s) => {
+    if (!window.confirm(`Import all services from ${s.name}? (applies 2× markup by default)`)) return;
+    setImporting(s.supplier_id);
+    try {
+      const { data } = await api.post(`/admin/suppliers/${s.supplier_id}/import-services`, { markup: 2.0 });
+      toast.success(`Imported ${data.imported}, updated ${data.updated}${data.note ? ` · ${data.note}` : ""}`);
+    } catch (err) { toast.error(formatApiError(err.response?.data?.detail)); }
+    finally { setImporting(null); }
+  };
 
   return (
     <div className="space-y-6">
@@ -68,6 +79,16 @@ export default function AdminSuppliers() {
               <div className="flex justify-between gap-2"><span className="text-muted-foreground">Added</span><span className="text-xs">{shortDate(s.created_at)}</span></div>
             </div>
             {s.notes && <div className="mt-4 text-xs text-muted-foreground">{s.notes}</div>}
+            <Button
+              onClick={() => importServices(s)}
+              disabled={importing === s.supplier_id}
+              variant="outline"
+              className="w-full mt-5 rounded-sm border-foreground/30 hover:border-foreground"
+              data-testid={`import-services-${s.supplier_id}`}
+            >
+              <Download className={`w-4 h-4 mr-2 ${importing === s.supplier_id ? "animate-pulse" : ""}`} />
+              {importing === s.supplier_id ? "Importing…" : "Import services (action=services)"}
+            </Button>
           </div>
         ))}
       </div>

@@ -3,9 +3,10 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, ShoppingCart, ListOrdered, Wallet, Receipt, Shield, Package, LogOut, User as UserIcon, Cog, Users as UsersIcon, Server,
+  LayoutDashboard, ShoppingCart, ListOrdered, Wallet, Receipt, Shield, Package, LogOut, User as UserIcon, Cog, Users as UsersIcon, Server, LifeBuoy, MessageSquare,
 } from "lucide-react";
 import { money } from "../../lib/api";
+import NotificationBell from "./NotificationBell";
 
 const ClientNav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, testid: "nav-dashboard" },
@@ -14,6 +15,7 @@ const ClientNav = [
   { to: "/orders", label: "Orders", icon: ListOrdered, testid: "nav-orders" },
   { to: "/add-funds", label: "Add Funds", icon: Wallet, testid: "nav-add-funds" },
   { to: "/transactions", label: "Transactions", icon: Receipt, testid: "nav-transactions" },
+  { to: "/support", label: "Support", icon: LifeBuoy, testid: "nav-support" },
 ];
 
 const AdminNav = [
@@ -24,6 +26,7 @@ const AdminNav = [
   { to: "/admin/suppliers", label: "Suppliers", icon: Server, testid: "nav-admin-suppliers" },
   { to: "/admin/orders", label: "All Orders", icon: ListOrdered, testid: "nav-admin-orders" },
   { to: "/admin/transactions", label: "Transactions", icon: Receipt, testid: "nav-admin-transactions" },
+  { to: "/admin/tickets", label: "Tickets", icon: MessageSquare, testid: "nav-admin-tickets" },
 ];
 
 export default function DashboardLayout({ admin = false }) {
@@ -107,6 +110,7 @@ export default function DashboardLayout({ admin = false }) {
           <span className="w-2 h-2 bg-signal" /> SocialBoost.Pro
         </Link>
         <div className="flex items-center gap-2">
+          <NotificationBell />
           <Link to="/add-funds">
             <Button size="sm" className="rounded-sm h-8 bg-signal text-white">{money(user?.balance)}</Button>
           </Link>
@@ -115,6 +119,10 @@ export default function DashboardLayout({ admin = false }) {
       </div>
 
       <main className="flex-1 pt-14 md:pt-0 min-w-0">
+        {/* Desktop top bar with notification bell */}
+        <div className="hidden md:flex items-center justify-end gap-3 px-6 py-3 border-b border-border">
+          <NotificationBell />
+        </div>
         {/* Mobile nav strip */}
         <div className="md:hidden overflow-x-auto no-scrollbar border-b border-border">
           <div className="flex gap-1 px-2 py-2 min-w-max">

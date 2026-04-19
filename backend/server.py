@@ -15,6 +15,8 @@ from app.orders_router import router as orders_router
 from app.services_router import router as services_router
 from app.payments_router import router as payments_router, webhook_router, wallet_router
 from app.admin_router import router as admin_router
+from app.tickets_router import router as tickets_router, admin_router as tickets_admin_router
+from app.notifications_router import router as notifications_router
 from app.suppliers import seed_default_supplier_and_services, seed_default_roles
 
 logging.basicConfig(
@@ -43,6 +45,9 @@ app.include_router(payments_router)
 app.include_router(webhook_router)
 app.include_router(wallet_router)
 app.include_router(admin_router)
+app.include_router(tickets_router)
+app.include_router(tickets_admin_router)
+app.include_router(notifications_router)
 
 origins_raw = os.environ.get("CORS_ORIGINS", "*")
 origins = [o.strip() for o in origins_raw.split(",") if o.strip()]

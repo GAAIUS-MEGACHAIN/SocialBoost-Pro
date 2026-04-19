@@ -7,6 +7,20 @@ from .db import get_db
 from .models import OrderCreate, now_utc
 from .suppliers import add_order_to_supplier, check_order_status, normalize_status
 
+
+async def _notify(user_id: str, ttype: str, title: str, message: str, link: str = ""):
+    db = get_db()
+    await db.notifications.insert_one({
+        "notif_id": f"ntf_{uuid.uuid4().hex[:12]}",
+        "user_id": user_id,
+        "type": ttype,
+        "title": title,
+        "message": message,
+        "link": link,
+        "read": False,
+        "created_at": now_utc().isoformat(),
+    })
+
 router = APIRouter(prefix="/api/orders", tags=["orders"])
 
 
@@ -103,6 +117,12 @@ async def create_order(data: OrderCreate, user: dict = Depends(require_active)):
         "updated_at": now_utc().isoformat(),
     }
     await db.orders.insert_one(doc)
+
+    # In-app notification
+    await _notify(user["user_id"], "order",
+                  "Order placed",
+                  f"{service['name']} × {qty:,} for ${charge:.2f}",
+                  "/orders")
 
     # Record transaction
     await db.payment_transactions.insert_one({

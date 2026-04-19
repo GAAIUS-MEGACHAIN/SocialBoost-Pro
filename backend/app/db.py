@@ -32,3 +32,6 @@ async def ensure_indexes():
     await db.roles.create_index("role_id", unique=True)
     await db.payment_transactions.create_index("session_id")
     await db.payment_transactions.create_index("user_id")
+    await db.tickets.create_index("ticket_id", unique=True)
+    await db.tickets.create_index("user_id")
+    await db.notifications.create_index([("user_id", 1), ("created_at", -1)])
