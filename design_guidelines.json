@@ -1,0 +1,130 @@
+{
+  "theme": "Light",
+  "archetype": "4 (Swiss & High-Contrast)",
+  "concept": "A high-end, brutalist-inspired 'Command Center' for social media marketing. It strips away soft gradients and bloated UI, focusing on stark data clarity, crisp borders, and aggressive kinetic typography.",
+  "colors": {
+    "background": "#FAFAFA",
+    "foreground": "#0A0A0A",
+    "primary": "#FF3300",
+    "primary_foreground": "#FFFFFF",
+    "secondary": "#EFEFEF",
+    "secondary_foreground": "#0A0A0A",
+    "muted": "#F4F4F5",
+    "muted_foreground": "#71717A",
+    "accent": "#002FA7",
+    "border": "#E4E4E7",
+    "input": "#E4E4E7",
+    "card": "#FFFFFF",
+    "card_foreground": "#0A0A0A",
+    "destructive": "#EF4444",
+    "ring": "#0A0A0A"
+  },
+  "typography": {
+    "fonts": {
+      "heading": "'Clash Display', sans-serif",
+      "body": "'Manrope', sans-serif",
+      "mono": "'JetBrains Mono', monospace"
+    },
+    "scales": {
+      "h1": "text-5xl md:text-6xl+ tracking-tighter font-semibold",
+      "h2": "text-3xl md:text-4xl tracking-tight font-semibold",
+      "h3": "text-xl md:text-2xl font-medium",
+      "body": "text-base leading-relaxed",
+      "small": "text-sm text-muted-foreground",
+      "overline": "text-xs font-bold uppercase tracking-[0.2em]"
+    },
+    "imports": [
+      "@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap');",
+      "@import url('https://api.fontshare.com/v2/css?f[]=clash-display@400,500,600,700&display=swap');"
+    ]
+  },
+  "spacing_and_layout": {
+    "marketing": {
+      "strategy": "Bento Grid Protocol - Mode A (Tetris Grid). Asymmetric, high visual tension.",
+      "section_padding": "py-24 md:py-32",
+      "container": "container mx-auto px-6 md:px-12",
+      "grid": "grid grid-cols-1 md:grid-cols-12 gap-8 md:gap-12"
+    },
+    "dashboard": {
+      "strategy": "Control Room Grid. Dense, data-heavy, maximizing viewport space.",
+      "section_padding": "p-6 md:p-8",
+      "grid": "grid grid-cols-1 md:grid-cols-4 lg:grid-cols-12 gap-4 md:gap-6",
+      "card_padding": "p-6"
+    },
+    "radius": "rounded-none md:rounded-sm",
+    "borders": "1px solid border-border/60"
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-primary text-white hover:bg-primary/90 font-medium tracking-wide rounded-sm border border-transparent transition-all",
+      "secondary": "bg-transparent text-foreground border border-border hover:border-foreground transition-all rounded-sm",
+      "ghost": "bg-transparent hover:bg-muted text-foreground transition-all rounded-sm",
+      "cta_large": "px-8 py-6 text-lg bg-primary text-white hover:bg-foreground hover:text-white transition-all rounded-none"
+    },
+    "cards": {
+      "dashboard_widget": "bg-card border border-border rounded-sm shadow-none hover:border-foreground/20 transition-colors",
+      "marketing_bento": "bg-white border border-border overflow-hidden rounded-sm"
+    },
+    "forms": {
+      "input": "border-border bg-white rounded-sm focus:ring-1 focus:ring-foreground focus:border-foreground transition-all",
+      "label": "text-sm font-semibold tracking-tight text-foreground"
+    },
+    "badges": {
+      "pending": "bg-amber-100 text-amber-800 border border-amber-200 rounded-full px-2 py-0.5 text-xs font-medium",
+      "in_progress": "bg-blue-100 text-blue-800 border border-blue-200 rounded-full px-2 py-0.5 text-xs font-medium",
+      "completed": "bg-green-100 text-green-800 border border-green-200 rounded-full px-2 py-0.5 text-xs font-medium",
+      "canceled": "bg-red-100 text-red-800 border border-red-200 rounded-full px-2 py-0.5 text-xs font-medium"
+    }
+  },
+  "motion": {
+    "hover": "transition-all duration-200 ease-out",
+    "entrance": "animate-in fade-in slide-in-from-bottom-4 duration-500",
+    "marquee": "Use react-fast-marquee for a subtle 'Editorial Ribbon' of supported platforms (FB, IG, TT, X)"
+  },
+  "media": {
+    "hero_image": {
+      "url": "https://images.pexels.com/photos/6476580/pexels-photo-6476580.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Modern creative agency workspace representing SMM operations",
+      "description": "Primary visual for the marketing landing page hero section. Apply a bg-black/30 overlay if text is placed on top, or use alongside an asymmetric layout."
+    },
+    "auth_background": {
+      "url": "https://images.pexels.com/photos/34502061/pexels-photo-34502061.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Minimalist clean desk",
+      "description": "Background image for the split-screen authentication page (Login/Register)."
+    },
+    "testimonial_avatar": {
+      "url": "https://images.pexels.com/photos/16846823/pexels-photo-16846823.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Professional SMM Agency Owner",
+      "description": "Avatar for marketing page testimonials."
+    },
+    "partner_logo_1": {
+      "url": "https://images.pexels.com/photos/5437587/pexels-photo-5437587.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "PayPal abstract logo",
+      "description": "To be used in the Add Funds section or footer."
+    },
+    "partner_logo_2": {
+      "url": "https://images.pexels.com/photos/17614479/pexels-photo-17614479.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "alt": "Meta platforms abstract",
+      "description": "To be used in the Services section representing FB/IG."
+    }
+  },
+  "icons": {
+    "library": "lucide-react",
+    "installation": "yarn add lucide-react",
+    "instructions": "Use Lucide-React for all standard UI icons (dashboard nav, quick actions, settings). For actual social platform logos, use react-icons (e.g., FaFacebook, FaInstagram, FaTiktok, FaXTwitter)."
+  },
+  "accessibility_and_testing": {
+    "testing": "All interactive elements MUST have a data-testid attribute formatted as kebab-case, role-based (e.g., data-testid='submit-order-button', data-testid='nav-dashboard-link').",
+    "contrast": "Ensure pure black/white combinations meet 4.5:1 ratio. Hover states must explicitly set text color (e.g., hover:bg-foreground hover:text-white)."
+  },
+  "instructions_to_main_agent": [
+    "INSTALL FONTS: Add Clash Display and Manrope to the global CSS and configure them in tailwind.config.js as the primary sans fonts. DO NOT use Inter or Roboto.",
+    "MARKETING PAGE: Use raw HTML/Tailwind for the landing page structure (do not force Shadcn 'Card' here). Build a hero section with massive 'Clash Display' typography, a marquee showing social platforms, and an asymmetric bento grid for the features.",
+    "DASHBOARD LAYOUT: Create a persistent sidebar nav and a dense top header. Use 'grid-cols-4' or 'grid-cols-12' for the main content area. Make maximum use of screen real estate. Cards should have 1px borders and almost no border-radius (rounded-sm).",
+    "ORDER FORM: Build a multi-step or highly organized single-page form using Shadcn Select and Input components. Platform -> Service -> Link -> Quantity -> Price.",
+    "TABLES: Use a responsive data table for 'Orders List' and 'Transaction History'. Include status badges using the exact classes defined in this JSON.",
+    "ADMIN PANEL: Implement views for managing users, services (pricing/suppliers), and viewing all system transactions.",
+    "COLOR THEME: Stick to the strict monochrome base (FAFAFA to 0A0A0A) with Signal Red (#FF3300) reserved exclusively for primary CTAs (Submit Order, Add Funds, Login).",
+    "MEDIA: Use the provided media URLs exclusively. Do not use placeholder.com or dummy images. Apply a grayscale or high-contrast filter to the images via CSS (e.g., saturate-0 contrast-125) if it enhances the Swiss brutalist vibe."
+  ]
+}
