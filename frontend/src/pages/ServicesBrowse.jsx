@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { api, money4 } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FaInstagram, FaFacebook, FaTiktok, FaXTwitter, FaYoutube } from "react-icons/fa6";
+import { FaInstagram, FaFacebook, FaTiktok, FaXTwitter, FaYoutube, FaLinkedin, FaTelegram, FaSpotify, FaDiscord, FaTwitch, FaPinterest, FaSnapchat, FaWhatsapp, FaGlobe, FaMobile, FaAt } from "react-icons/fa6";
 import { Search, Filter, Heart } from "lucide-react";
 import { toast } from "sonner";
 
@@ -13,6 +13,17 @@ const PLATFORM_META = {
   facebook: { label: "Facebook", icon: FaFacebook, color: "text-blue-700" },
   twitter: { label: "X / Twitter", icon: FaXTwitter, color: "text-black" },
   youtube: { label: "YouTube", icon: FaYoutube, color: "text-red-600" },
+  linkedin: { label: "LinkedIn", icon: FaInstagram, color: "text-blue-900" },
+  telegram: { label: "Telegram", icon: FaInstagram, color: "text-sky-600" },
+  spotify: { label: "Spotify", icon: FaInstagram, color: "text-emerald-700" },
+  discord: { label: "Discord", icon: FaInstagram, color: "text-indigo-700" },
+  twitch: { label: "Twitch", icon: FaInstagram, color: "text-purple-700" },
+  pinterest: { label: "Pinterest", icon: FaInstagram, color: "text-red-700" },
+  snapchat: { label: "Snapchat", icon: FaInstagram, color: "text-yellow-500" },
+  whatsapp: { label: "WhatsApp", icon: FaInstagram, color: "text-emerald-600" },
+  threads: { label: "Threads", icon: FaInstagram, color: "text-black" },
+  website: { label: "Website", icon: FaInstagram, color: "text-slate-700" },
+  app: { label: "App", icon: FaInstagram, color: "text-slate-700" },
 };
 
 export default function ServicesBrowse() {
@@ -88,6 +99,26 @@ export default function ServicesBrowse() {
           );
         })}
       </div>
+
+      {/* Platform quick-access tiles */}
+      {platform === "all" && !loading && (
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+          {[...new Set(services.map((s) => s.platform))].map((p) => {
+            const meta = PLATFORM_META[p];
+            const Icon = meta?.icon;
+            const count = services.filter((s) => s.platform === p).length;
+            return (
+              <Link key={p} to={`/services/${p}`} className="border border-border bg-card rounded-sm p-4 hover:border-foreground hover:-translate-y-0.5 transition-all" data-testid={`platform-tile-${p}`}>
+                <div className="flex items-center gap-2">
+                  {Icon && <Icon className="w-5 h-5" />}
+                  <div className="text-sm font-medium capitalize">{meta?.label || p}</div>
+                </div>
+                <div className="mt-2 font-mono text-[11px] text-muted-foreground">{count} services →</div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
       {loading ? (
         <div className="text-sm text-muted-foreground">Loading services…</div>

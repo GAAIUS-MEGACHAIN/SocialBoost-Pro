@@ -4,7 +4,19 @@ import { api, money, shortDate, STATUS_STYLES } from "../lib/api";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Wallet, ListOrdered, CheckCircle2, Clock, RefreshCw } from "lucide-react";
+import { FaInstagram, FaFacebook, FaTiktok, FaXTwitter, FaYoutube, FaLinkedin, FaTelegram, FaSpotify } from "react-icons/fa6";
 import { toast } from "sonner";
+
+const QUICK_PLATFORMS = [
+  { slug: "instagram", label: "Instagram", icon: FaInstagram, color: "from-fuchsia-600 to-pink-500" },
+  { slug: "tiktok", label: "TikTok", icon: FaTiktok, color: "from-foreground to-foreground" },
+  { slug: "youtube", label: "YouTube", icon: FaYoutube, color: "from-red-700 to-red-500" },
+  { slug: "facebook", label: "Facebook", icon: FaFacebook, color: "from-blue-700 to-blue-600" },
+  { slug: "twitter", label: "X / Twitter", icon: FaXTwitter, color: "from-foreground to-foreground" },
+  { slug: "linkedin", label: "LinkedIn", icon: FaLinkedin, color: "from-sky-800 to-sky-600" },
+  { slug: "telegram", label: "Telegram", icon: FaTelegram, color: "from-sky-600 to-sky-400" },
+  { slug: "spotify", label: "Spotify", icon: FaSpotify, color: "from-emerald-700 to-emerald-500" },
+];
 
 export default function Dashboard() {
   const { user, refresh } = useAuth();
@@ -76,6 +88,29 @@ export default function Dashboard() {
             </div>
           );
         })}
+      </div>
+
+      {/* Platform quick-access */}
+      <div>
+        <div className="flex items-end justify-between mb-4">
+          <div>
+            <div className="text-[10px] uppercase tracking-widest text-muted-foreground">/ Platforms</div>
+            <div className="font-display text-2xl tracking-tight">Jump into a platform</div>
+          </div>
+          <Link to="/services" className="text-sm underline underline-offset-4 hover:text-signal">Browse all</Link>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+          {QUICK_PLATFORMS.map((p) => {
+            const PIcon = p.icon;
+            return (
+              <Link key={p.slug} to={`/services/${p.slug}`} className={`relative overflow-hidden rounded-sm p-5 bg-gradient-to-br ${p.color} text-white hover:-translate-y-0.5 transition-all`} data-testid={`dashboard-platform-${p.slug}`}>
+                <PIcon className="w-6 h-6" />
+                <div className="mt-8 font-display text-lg tracking-tight leading-none">{p.label}</div>
+                <div className="mt-1 text-[10px] opacity-70 uppercase tracking-widest">Open →</div>
+              </Link>
+            );
+          })}
+        </div>
       </div>
 
       {/* Recent orders */}

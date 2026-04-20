@@ -11,6 +11,7 @@ import NotificationBell from "./NotificationBell";
 const ClientNav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, testid: "nav-dashboard" },
   { to: "/services", label: "Services", icon: Package, testid: "nav-services" },
+  { to: "/my-accounts", label: "My Accounts", icon: UserIcon, testid: "nav-my-accounts" },
   { to: "/favorites", label: "Favorites", icon: Heart, testid: "nav-favorites" },
   { to: "/new-order", label: "New Order", icon: ShoppingCart, testid: "nav-new-order" },
   { to: "/bulk-upload", label: "Bulk Upload", icon: FileSpreadsheet, testid: "nav-bulk-upload" },

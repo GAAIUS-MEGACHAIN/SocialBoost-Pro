@@ -22,6 +22,8 @@ import Profile from "./pages/Profile";
 import Refills from "./pages/Refills";
 import Favorites from "./pages/Favorites";
 import BulkUpload from "./pages/BulkUpload";
+import PlatformView from "./pages/PlatformView";
+import MyAccounts from "./pages/MyAccounts";
 
 function Router() {
   const location = useLocation();
@@ -44,6 +46,8 @@ function Router() {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/services" element={<ServicesBrowse />} />
+        <Route path="/services/:platform" element={<PlatformView />} />
+        <Route path="/my-accounts" element={<MyAccounts />} />
         <Route path="/new-order" element={<NewOrder />} />
         <Route path="/orders" element={<OrdersList />} />
         <Route path="/add-funds" element={<AddFunds />} />

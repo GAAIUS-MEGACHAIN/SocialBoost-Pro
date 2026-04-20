@@ -1,16 +1,16 @@
 {
   "name": "socialboost-pro-desktop",
   "version": "1.0.0",
-  "description": "SocialBoost Pro — SMM panel desktop app (Electron)",
+  "description": "SocialBoost Pro — SMM panel desktop app with full embedded backend (lowdb JSON storage + real Stripe/PayPal/supplier calls)",
   "main": "main.js",
   "author": "SocialBoost Pro",
   "license": "MIT",
   "scripts": {
     "start": "electron .",
-    "start:standalone": "SBP_MODE=standalone electron .",
-    "package:mac": "electron-packager . SocialBoostPro --platform=darwin --arch=universal --overwrite --icon=assets/icon.icns",
-    "package:win": "electron-packager . SocialBoostPro --platform=win32 --arch=x64 --overwrite --icon=assets/icon.ico",
-    "package:linux": "electron-packager . SocialBoostPro --platform=linux --arch=x64 --overwrite"
+    "build:ui": "cd ../frontend && yarn build && rm -rf ../electron/web-dist && cp -r build ../electron/web-dist",
+    "package:mac": "yarn build:ui && electron-packager . SocialBoostPro --platform=darwin --arch=universal --overwrite --icon=assets/icon.icns",
+    "package:win": "yarn build:ui && electron-packager . SocialBoostPro --platform=win32 --arch=x64 --overwrite --icon=assets/icon.ico",
+    "package:linux": "yarn build:ui && electron-packager . SocialBoostPro --platform=linux --arch=x64 --overwrite"
   },
   "dependencies": {
     "express": "^4.19.2",

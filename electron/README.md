@@ -1,55 +1,75 @@
-# SocialBoost Pro — Desktop (Electron)
+# SocialBoost Pro — Desktop App
 
-Two-mode Electron app wrapping SocialBoost Pro for desktop use.
+Single-mode Electron build: **standalone, full backend embedded.**
 
-## Modes
+No web-wrapper. No live-URL shortcut. The Electron app runs its own Node + Express + **lowdb (JSON)** backend at `127.0.0.1:47219`, stores data at `~/.socialboost-pro/db.json`, and makes **real outbound calls** to Stripe, PayPal, and SMM supplier APIs whenever the machine has internet.
 
-### 1. Online mode (default — recommended)
-Wraps the hosted web app at `https://smm-panel-hub-10.preview.emergentagent.com`.
-All real features work: Stripe/PayPal payments, supplier sync, admin, etc.
+## Features (identical to the web version)
+- Full auth (register / login / logout / sessions)
+- 16-platform catalog (Instagram, TikTok, Facebook, X, YouTube, LinkedIn, Telegram, Spotify, Discord, Twitch, Pinterest, Snapchat, WhatsApp, Threads, Website, App)
+- Dedicated platform pages (Dashboard → click Instagram / TikTok / etc.)
+- Orders + sync + refills + cancels + CSV export
+- Favorites, bulk upload (see note below)
+- Stripe Checkout (live API, uses `STRIPE_API_KEY` env or test key)
+- PayPal Orders v2 (live API, uses `PAYPAL_CLIENT_ID` / `PAYPAL_SECRET` env)
+- Supplier import via `action=services` (real HTTP to your supplier)
+- Admin: users, roles, services, suppliers, orders, refills, transactions, tickets, announcements, profit dashboard
+- In-app notifications, support tickets, API keys + reseller v2 API, my-accounts tracking
 
-### 2. Standalone mode (offline — demo only)
-Runs a local Node.js + Express + **lowdb (JSON file storage)** backend at `127.0.0.1:47219` and serves the React UI from `web-dist/`.
+## Seeded credentials
+- `admin@socialboost.pro` / `Admin@12345`
+- `demo@socialboost.pro` / `Demo@12345` ($50 balance)
 
-- Data is persisted at `~/.socialboost-pro/db.json`
-- **Payments are disabled** (Stripe/PayPal need internet + merchant accounts)
-- **Real supplier APIs are disabled** (mock status progression runs via a local timer)
-- Default seeded credentials:
-  - `admin@local` / `Admin@12345`
-  - `demo@local` / `Demo@12345`
-
-## Setup & run
+## Setup
 
 ```bash
 cd /app/electron
-
-# one-time install
-yarn install      # or: npm install
-
-# online mode
-yarn start
-
-# standalone mode
-yarn start:standalone
-
-# build the React UI into ./web-dist (required for standalone mode)
-cd ../frontend && yarn build && cp -r build ../electron/web-dist && cd ../electron
+yarn install
 ```
 
-## Packaging
+### Configure real payment keys (optional — skip for mock-only use)
+
+Stripe and PayPal calls will use environment variables if set. On launch:
 
 ```bash
-yarn package:mac      # produces SocialBoostPro-darwin-universal/
-yarn package:win      # produces SocialBoostPro-win32-x64/
-yarn package:linux    # produces SocialBoostPro-linux-x64/
+# macOS / Linux
+STRIPE_API_KEY=sk_live_xxx \
+PAYPAL_CLIENT_ID=AX... PAYPAL_SECRET=EX... PAYPAL_MODE=live \
+yarn start
+
+# Windows (PowerShell)
+$env:STRIPE_API_KEY="sk_live_xxx"
+$env:PAYPAL_CLIENT_ID="AX..."
+$env:PAYPAL_SECRET="EX..."
+yarn start
 ```
 
-The packaged binary can be shared with others. Users on any Mac / Windows / Linux machine can open the `.app` / `.exe` and log in with their account (online mode) or the seeded credentials (standalone mode).
+If no keys are set, Stripe falls back to the test key `sk_test_emergent` and PayPal uses the sandbox credentials already baked into the web version (`PAYPAL_MODE=sandbox` default).
 
-## Why `localhost:3000` can't be shared across computers/WiFi
+### Build the UI into the desktop app
 
-`localhost` is a reserved loopback address meaning "the same computer". Someone on a different computer or network cannot reach it — that's not a limitation of this app, that's how TCP/IP works. To share your app with others, use either:
+```bash
+yarn build:ui    # builds React and copies to ./web-dist
+yarn start       # launches Electron, loads the embedded UI
+```
 
-1. The Emergent preview URL (already public),
-2. A deployment (Emergent Deploy / Vercel / Railway),
-3. Or this Electron app — packaged and sent as a file to the other person (they run it on their own computer, storing data locally in standalone mode, or connecting to your online panel).
+### Package for distribution
+
+```bash
+yarn package:mac     # SocialBoostPro-darwin-universal/
+yarn package:win     # SocialBoostPro-win32-x64/
+yarn package:linux   # SocialBoostPro-linux-x64/
+```
+
+The packaged binary is a single folder you can zip and send to anyone — they run the executable and get the exact same app with their own local `~/.socialboost-pro/db.json`.
+
+## Data location
+
+`~/.socialboost-pro/db.json` — one JSON file with users, orders, services, suppliers, tickets, notifications, api_keys, transactions, refills, announcements, user_accounts, favorites. Back it up, copy it to another machine, edit it by hand. It's your data.
+
+## Minor differences vs. hosted version
+- **Bulk CSV upload** — returns HTTP 501 in desktop mode (multipart parser not bundled to keep the binary small). Use single-order or the reseller v2 API for batch work.
+- **Emergent Google Sign-in** — not supported in desktop (no OAuth callback host). Use email/password.
+- **Stripe webhooks** — not applicable in desktop (no public HTTP endpoint). Status polling on `/payment/success` picks up the payment within 2-4 seconds.
+
+Everything else is feature-parity.

@@ -1,80 +1,46 @@
-// SocialBoost Pro — Electron main process.
-// Two modes:
-//  - SBP_MODE=online (default): loads hosted preview URL
-//  - SBP_MODE=standalone: spins up a local Express+lowdb backend on 127.0.0.1:PORT
-//    and serves the React build from ./web-dist, wiring the frontend's
-//    BACKEND_URL to the local server (via injected window.__SBP_BACKEND_URL).
+// SocialBoost Pro — Electron main process. STANDALONE ONLY.
+// Embeds a full Node.js + Express + lowdb backend that makes real outbound calls
+// to Stripe, PayPal and SMM supplier APIs when the machine has internet.
+//
+// No "wrap the live website" mode. If you want the live hosted panel,
+// open your browser.
 
 const { app, BrowserWindow, Menu, shell, dialog } = require("electron");
 const path = require("path");
-const url = require("url");
+const fs = require("fs");
 
-const MODE = process.env.SBP_MODE || "online";
-const ONLINE_URL = process.env.SBP_ONLINE_URL || "https://smm-panel-hub-10.preview.emergentagent.com";
-const STANDALONE_PORT = parseInt(process.env.SBP_STANDALONE_PORT || "47219", 10);
+const PORT = parseInt(process.env.SBP_PORT || "47219", 10);
 
 let mainWindow;
-let standaloneServer;
+let server;
 
-async function startStandaloneBackend() {
+async function startEmbeddedBackend() {
   const { startServer } = require("./standalone/server");
-  standaloneServer = await startServer(STANDALONE_PORT);
-  return `http://127.0.0.1:${STANDALONE_PORT}`;
+  server = await startServer(PORT);
+  return `http://127.0.0.1:${PORT}`;
 }
 
 function buildMenu() {
-  const template = [
-    {
-      label: "File",
-      submenu: [
-        { role: "reload" },
-        { role: "forcereload" },
-        { type: "separator" },
-        { role: "quit" },
-      ],
-    },
-    {
-      label: "Mode",
-      submenu: [
-        {
-          label: "Online (connect to live panel)",
-          type: "radio",
-          checked: MODE === "online",
-          click: () => restartInMode("online"),
-        },
-        {
-          label: "Standalone (offline JSON storage)",
-          type: "radio",
-          checked: MODE === "standalone",
-          click: () => restartInMode("standalone"),
-        },
-      ],
-    },
+  Menu.setApplicationMenu(Menu.buildFromTemplate([
+    { label: "File", submenu: [{ role: "reload" }, { role: "forcereload" }, { type: "separator" }, { role: "quit" }] },
     { role: "editMenu" },
     { role: "viewMenu" },
     { role: "windowMenu" },
     {
-      label: "Help",
-      submenu: [
-        {
-          label: "About SocialBoost Pro",
-          click: () => dialog.showMessageBox({
-            type: "info",
-            title: "About",
-            message: "SocialBoost Pro Desktop",
-            detail: "Mode: " + MODE + "\nOnline URL: " + ONLINE_URL + "\nStandalone port: " + STANDALONE_PORT,
-          }),
-        },
-      ],
+      label: "Help", submenu: [{
+        label: "About SocialBoost Pro",
+        click: () => dialog.showMessageBox({
+          type: "info",
+          title: "About",
+          message: "SocialBoost Pro Desktop",
+          detail: `Standalone build. Local backend on http://127.0.0.1:${PORT}\nData: ~/.socialboost-pro/db.json`,
+        }),
+      }, {
+        label: "Open data folder",
+        click: () => shell.openPath(require("os").homedir() + "/.socialboost-pro"),
+      }],
     },
-  ];
-  Menu.setApplicationMenu(Menu.buildFromTemplate(template));
-}
-
-function restartInMode(mode) {
-  process.env.SBP_MODE = mode;
-  app.relaunch({ args: process.argv.slice(1).concat(["--mode=" + mode]) });
-  app.exit(0);
+  ]));
 }
 
 async function createWindow() {
@@ -93,23 +59,14 @@ async function createWindow() {
     },
   });
 
-  // Open external links in the user's browser
-  mainWindow.webContents.setWindowOpenHandler(({ url: u }) => {
-    shell.openExternal(u);
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
     return { action: "deny" };
   });
 
-  let target;
-  if (MODE === "standalone") {
-    const backendUrl = await startStandaloneBackend();
-    // Standalone serves both the static web build AND the API under /api
-    target = backendUrl + "/";
-  } else {
-    target = ONLINE_URL;
-  }
-
+  const target = await startEmbeddedBackend();
   try {
-    await mainWindow.loadURL(target);
+    await mainWindow.loadURL(target + "/");
   } catch (e) {
     dialog.showErrorBox("Load failed", "Could not load " + target + ": " + e.message);
   }
@@ -118,12 +75,10 @@ async function createWindow() {
 app.whenReady().then(() => {
   buildMenu();
   createWindow();
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
+  app.on("activate", () => { if (BrowserWindow.getAllWindows().length === 0) createWindow(); });
 });
 
 app.on("window-all-closed", () => {
-  if (standaloneServer && standaloneServer.close) standaloneServer.close();
+  if (server && server.close) server.close();
   if (process.platform !== "darwin") app.quit();
 });

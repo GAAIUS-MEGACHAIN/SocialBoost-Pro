@@ -5,11 +5,11 @@ import { ArrowRight, Shield, Zap, BarChart3, Layers3, Globe2, CreditCard } from 
 import { Button } from "@/components/ui/button";
 
 const Platforms = [
-  { icon: FaInstagram, label: "Instagram" },
-  { icon: FaTiktok, label: "TikTok" },
-  { icon: FaFacebook, label: "Facebook" },
-  { icon: FaXTwitter, label: "X / Twitter" },
-  { icon: FaYoutube, label: "YouTube" },
+  { icon: FaInstagram, label: "Instagram", slug: "instagram" },
+  { icon: FaTiktok,    label: "TikTok",    slug: "tiktok"    },
+  { icon: FaFacebook,  label: "Facebook",  slug: "facebook"  },
+  { icon: FaXTwitter,  label: "X / Twitter", slug: "twitter" },
+  { icon: FaYoutube,   label: "YouTube",   slug: "youtube"   },
 ];
 
 function Ticker() {
@@ -142,9 +142,12 @@ export default function Landing() {
           {Platforms.map((p, idx) => {
             const Icon = p.icon;
             const large = idx === 0;
+            const slug = p.slug;
             return (
-              <div
+              <Link
                 key={p.label}
+                to={`/services/${slug}`}
+                data-testid={`platform-card-${slug}`}
                 className={`border border-border rounded-sm p-8 bg-card relative overflow-hidden group hover:-translate-y-0.5 transition-all ${large ? "md:col-span-5 md:row-span-2" : "md:col-span-4"}`}
               >
                 <div className="flex items-start justify-between">
@@ -153,8 +156,9 @@ export default function Landing() {
                 </div>
                 <div className="mt-14 font-display text-3xl md:text-4xl tracking-tight">{p.label}</div>
                 <div className="mt-3 text-sm text-muted-foreground">Followers · Likes · Views · Comments</div>
+                <div className="mt-4 text-[11px] uppercase tracking-widest text-signal opacity-0 group-hover:opacity-100 transition-opacity">Open panel →</div>
                 <div className="absolute bottom-0 left-0 h-0.5 w-0 bg-signal group-hover:w-full transition-all duration-500" />
-              </div>
+              </Link>
             );
           })}
           <div className="md:col-span-3 border border-foreground bg-foreground text-background rounded-sm p-8 flex flex-col justify-between">

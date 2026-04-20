@@ -42,3 +42,4 @@ async def ensure_indexes():
     await db.announcements.create_index("announcement_id", unique=True)
     await db.user_prefs.create_index("user_id", unique=True)
     await db.api_logs.create_index([("user_id", 1), ("created_at", -1)])
+    await db.user_accounts.create_index([("user_id", 1), ("platform", 1)])

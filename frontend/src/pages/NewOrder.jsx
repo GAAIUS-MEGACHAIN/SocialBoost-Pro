@@ -30,17 +30,24 @@ export default function NewOrder() {
     })();
   }, []);
 
-  // Preset from ?service= query param once services are loaded
+  // Preset from ?service= or ?platform= query params once services load
   useEffect(() => {
     const sid = params.get("service");
-    if (!sid || services.length === 0) return;
-    const preset = services.find((s) => s.service_id === sid);
-    if (preset) {
-      setPlatform(preset.platform);
-      setCategory(preset.category);
-      setServiceId(preset.service_id);
-      setQuantity(preset.min);
+    const plat = params.get("platform");
+    const linkParam = params.get("link");
+    if (linkParam) setLink(decodeURIComponent(linkParam));
+    if (services.length === 0) return;
+    if (sid) {
+      const preset = services.find((s) => s.service_id === sid);
+      if (preset) {
+        setPlatform(preset.platform);
+        setCategory(preset.category);
+        setServiceId(preset.service_id);
+        setQuantity(preset.min);
+        return;
+      }
     }
+    if (plat) setPlatform(plat);
   }, [services, params]);
 
   const platforms = useMemo(() => [...new Set(services.map((s) => s.platform))], [services]);
