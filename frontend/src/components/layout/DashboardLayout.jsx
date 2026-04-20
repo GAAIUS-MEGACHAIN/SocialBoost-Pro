@@ -3,7 +3,7 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard, ShoppingCart, ListOrdered, Wallet, Receipt, Shield, Package, LogOut, User as UserIcon, Cog, Users as UsersIcon, Server, LifeBuoy, MessageSquare,
+  LayoutDashboard, ShoppingCart, ListOrdered, Wallet, Receipt, Shield, Package, LogOut, User as UserIcon, Cog, Users as UsersIcon, Server, LifeBuoy, MessageSquare, Heart, RefreshCw, FileSpreadsheet, Key, Megaphone, TrendingUp,
 } from "lucide-react";
 import { money } from "../../lib/api";
 import NotificationBell from "./NotificationBell";
@@ -11,22 +11,29 @@ import NotificationBell from "./NotificationBell";
 const ClientNav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, testid: "nav-dashboard" },
   { to: "/services", label: "Services", icon: Package, testid: "nav-services" },
+  { to: "/favorites", label: "Favorites", icon: Heart, testid: "nav-favorites" },
   { to: "/new-order", label: "New Order", icon: ShoppingCart, testid: "nav-new-order" },
+  { to: "/bulk-upload", label: "Bulk Upload", icon: FileSpreadsheet, testid: "nav-bulk-upload" },
   { to: "/orders", label: "Orders", icon: ListOrdered, testid: "nav-orders" },
+  { to: "/refills", label: "Refills", icon: RefreshCw, testid: "nav-refills" },
   { to: "/add-funds", label: "Add Funds", icon: Wallet, testid: "nav-add-funds" },
   { to: "/transactions", label: "Transactions", icon: Receipt, testid: "nav-transactions" },
+  { to: "/profile", label: "Profile & API", icon: Key, testid: "nav-profile" },
   { to: "/support", label: "Support", icon: LifeBuoy, testid: "nav-support" },
 ];
 
 const AdminNav = [
   { to: "/admin", label: "Overview", icon: LayoutDashboard, end: true, testid: "nav-admin-overview" },
+  { to: "/admin/profit", label: "Profit", icon: TrendingUp, testid: "nav-admin-profit" },
   { to: "/admin/users", label: "Users", icon: UsersIcon, testid: "nav-admin-users" },
   { to: "/admin/roles", label: "Roles", icon: Shield, testid: "nav-admin-roles" },
   { to: "/admin/services", label: "Services", icon: Package, testid: "nav-admin-services" },
   { to: "/admin/suppliers", label: "Suppliers", icon: Server, testid: "nav-admin-suppliers" },
   { to: "/admin/orders", label: "All Orders", icon: ListOrdered, testid: "nav-admin-orders" },
+  { to: "/admin/refills", label: "Refills", icon: RefreshCw, testid: "nav-admin-refills" },
   { to: "/admin/transactions", label: "Transactions", icon: Receipt, testid: "nav-admin-transactions" },
   { to: "/admin/tickets", label: "Tickets", icon: MessageSquare, testid: "nav-admin-tickets" },
+  { to: "/admin/announcements", label: "Announcements", icon: Megaphone, testid: "nav-admin-announcements" },
 ];
 
 export default function DashboardLayout({ admin = false }) {

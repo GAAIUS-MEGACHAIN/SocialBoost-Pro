@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { api, money, shortDate, STATUS_STYLES } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { RefreshCw, Search } from "lucide-react";
+import { RefreshCw, Search, Download, RotateCcw, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 const STATUSES = ["All", "Pending", "In Progress", "Processing", "Completed", "Partial", "Canceled"];
@@ -53,6 +53,28 @@ export default function OrdersList() {
     } catch {} finally { setSyncing(false); }
   };
 
+  const requestRefill = async (o) => {
+    const reason = window.prompt("Reason for refill (optional):") || "";
+    try {
+      await api.post(`/orders/${o.order_id}/refill`, { reason });
+      toast.success("Refill requested");
+    } catch (err) { toast.error(formatApiError(err.response?.data?.detail) || err.message); }
+  };
+
+  const cancelOrd = async (o) => {
+    if (!window.confirm(`Cancel order ${o.order_id.slice(-8).toUpperCase()}? Amount will be refunded.`)) return;
+    try {
+      const { data } = await api.post(`/orders/${o.order_id}/cancel`);
+      toast.success(`Canceled · refunded ${money(data.refunded)}`);
+      await load();
+    } catch (err) { toast.error(formatApiError(err.response?.data?.detail) || err.message); }
+  };
+
+  const exportCsv = () => {
+    // Use session cookie; open in new tab for download
+    window.location.href = `${API_BASE}/orders/export`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-end justify-between flex-wrap gap-3">
@@ -60,9 +82,12 @@ export default function OrdersList() {
           <div className="text-xs uppercase tracking-widest text-muted-foreground">Tracking</div>
           <h1 className="font-display text-4xl md:text-5xl tracking-tighter mt-1">Orders</h1>
         </div>
-        <Button onClick={syncAll} disabled={syncing} variant="outline" className="rounded-sm" data-testid="orders-sync-all-button">
-          <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? "animate-spin" : ""}`} /> Sync all
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={exportCsv} variant="outline" className="rounded-sm" data-testid="orders-export-csv"><Download className="w-4 h-4 mr-2" /> Export CSV</Button>
+          <Button onClick={syncAll} disabled={syncing} variant="outline" className="rounded-sm" data-testid="orders-sync-all-button">
+            <RefreshCw className={`w-4 h-4 mr-2 ${syncing ? "animate-spin" : ""}`} /> Sync all
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-col md:flex-row md:items-center gap-3">
@@ -119,9 +144,21 @@ export default function OrdersList() {
                     </td>
                     <td className="px-5 py-3 text-muted-foreground">{shortDate(o.created_at)}</td>
                     <td className="px-5 py-3">
-                      <button onClick={() => syncOne(o.order_id)} className="p-1.5 hover:bg-muted rounded-sm" title="Sync" data-testid={`sync-order-${o.order_id}`}>
-                        <RefreshCw className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex gap-0.5">
+                        <button onClick={() => syncOne(o.order_id)} className="p-1.5 hover:bg-muted rounded-sm" title="Sync" data-testid={`sync-order-${o.order_id}`}>
+                          <RefreshCw className="w-3.5 h-3.5" />
+                        </button>
+                        {["Completed", "Partial"].includes(o.status) && (
+                          <button onClick={() => requestRefill(o)} className="p-1.5 hover:bg-muted rounded-sm" title="Refill" data-testid={`refill-order-${o.order_id}`}>
+                            <RotateCcw className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                        {["Pending", "In Progress"].includes(o.status) && (
+                          <button onClick={() => cancelOrd(o)} className="p-1.5 hover:bg-red-50 hover:text-red-700 rounded-sm" title="Cancel" data-testid={`cancel-order-${o.order_id}`}>
+                            <XCircle className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

@@ -17,6 +17,9 @@ from app.payments_router import router as payments_router, webhook_router, walle
 from app.admin_router import router as admin_router
 from app.tickets_router import router as tickets_router, admin_router as tickets_admin_router
 from app.notifications_router import router as notifications_router
+from app.api_v2_router import router as api_v2_router, keys_router as api_keys_router
+from app.extras_router import router as extras_router, admin_router as extras_admin_router
+from app.catalog_seed import seed_expanded_catalog
 from app.suppliers import seed_default_supplier_and_services, seed_default_roles
 
 logging.basicConfig(
@@ -48,6 +51,10 @@ app.include_router(admin_router)
 app.include_router(tickets_router)
 app.include_router(tickets_admin_router)
 app.include_router(notifications_router)
+app.include_router(api_v2_router)
+app.include_router(api_keys_router)
+app.include_router(extras_router)
+app.include_router(extras_admin_router)
 
 origins_raw = os.environ.get("CORS_ORIGINS", "*")
 origins = [o.strip() for o in origins_raw.split(",") if o.strip()]
@@ -79,6 +86,13 @@ async def on_startup():
         await seed_default_supplier_and_services()
     except Exception as e:
         logger.warning(f"Services seed: {e}")
+    try:
+        from app.db import get_db
+        inserted = await seed_expanded_catalog(get_db())
+        if inserted:
+            logger.info(f"Expanded catalog: inserted {inserted} new services")
+    except Exception as e:
+        logger.warning(f"Expanded catalog seed: {e}")
     logger.info("SocialBoost Pro API ready")
 
 

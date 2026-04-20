@@ -1,0 +1,27 @@
+{
+  "name": "socialboost-pro-desktop",
+  "version": "1.0.0",
+  "description": "SocialBoost Pro — SMM panel desktop app (Electron)",
+  "main": "main.js",
+  "author": "SocialBoost Pro",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "start:standalone": "SBP_MODE=standalone electron .",
+    "package:mac": "electron-packager . SocialBoostPro --platform=darwin --arch=universal --overwrite --icon=assets/icon.icns",
+    "package:win": "electron-packager . SocialBoostPro --platform=win32 --arch=x64 --overwrite --icon=assets/icon.ico",
+    "package:linux": "electron-packager . SocialBoostPro --platform=linux --arch=x64 --overwrite"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "lowdb": "^3.0.0",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "nanoid": "^3.3.7",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-packager": "^17.1.2"
+  }
+}

@@ -1,0 +1,46 @@
+{
+  "summary": "Iteration 4 (catalog expansion + reseller v2 API + API keys + favorites + refills + cancels + bulk CSV + announcements + profit dashboard + CSV export) tested end-to-end. 17/18 new backend tests pass, 45/45 iteration-3 regression tests pass, all new frontend pages (Profile/Favorites/Refills/BulkUpload + admin Profit/Refills/Announcements) load correctly and nav is preserved. Two bugs found — one fixed (OrdersList missing lucide imports crashed Orders page into a blank screen; fixed), one left for main agent (CSV export endpoint /api/orders/export is shadowed by orders_router's /{order_id} GET route; returns 404).",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "/api/orders/export", "issue": "Returns 404 'Order not found' because orders_router is registered BEFORE extras_router, and orders_router's GET /{order_id} catches the literal 'export' as an order_id lookup. Frontend Export CSV button therefore fails too.", "priority": "HIGH"}
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Orders → Export CSV button", "issue": "Button now renders (after my import fix) but click hits the broken /api/orders/export (returns 404). Backend route order must be fixed.", "affected_selectors": ["[data-testid='orders-export-csv']"]}
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration4.py",
+    "/app/test_reports/pytest/iteration4_results.xml",
+    "/app/test_reports/pytest/iteration4_regression.xml"
+  ],
+  "action_items": [
+    "Fix /api/orders/export routing: include extras_router BEFORE orders_router in /app/backend/server.py (swap order of include_router calls), OR add the export route inside orders_router itself before the /{order_id} catch-all, OR rename the path to /api/orders-export. This single change unblocks both the backend test and the frontend Export CSV button."
+  ],
+  "critical_code_review_comments": [
+    "HIGH: FastAPI route-ordering bug: orders_router.get('/{order_id}') shadows extras_router.get('/orders/export'). General lesson — put static string routes (or include extras_router) BEFORE path-param catch-all routes.",
+    "HIGH (fixed): /app/frontend/src/pages/OrdersList.jsx used <Download />, <RotateCcw />, <XCircle /> at line 86+ but only imported {RefreshCw, Search} from lucide-react → ReferenceError crashed the entire Orders page to a blank screen. I added the missing imports.",
+    "api_v2_router._resolve_api_key calls request.form() and request.json() sequentially in a fallback; works but both consume the body — Starlette caches so it is fine today but fragile. Minor.",
+    "extras_router.cancel_order refunds via direct balance increment AND creates a payment_transactions row with provider='refund'. Good audit trail — but the refund does not also write to the notifications collection (order cancel by user is silent). Consider parity with refill status notifications.",
+    "admin_create_announcement iterates all users and inserts notifications one-by-one. For 5000+ users this should be bulk insert (insert_many) — not blocking now but a perf smell.",
+    "admin_update_refill happily accepts 'completed' but never actually credits or places a supplier re-order — purely notional status. Document as expected or wire to supplier.",
+    "orders/bulk returns HTTP 200 even when the CSV has some invalid rows among valid ones — this is correct per spec (mixed results). Spec-compliant, flagging only for awareness.",
+    "Profit dashboard aggregates orders.status indiscriminately (includes Canceled orders in revenue/cost). If business considers Canceled as non-revenue, filter {'status': {'$ne': 'Canceled'}} in the pipeline.",
+    "OrdersList.jsx still missing data-testid on the per-row Refill/Cancel action buttons — add data-testid='orders-refill-{order_id}' / 'orders-cancel-{order_id}' for automation."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration4.py (new — 18 tests for iteration 4)",
+    "/app/frontend/src/pages/OrdersList.jsx (added missing lucide imports: Download, RotateCcw, XCircle — was crashing Orders page)"
+  ],
+  "success_rate": {"backend": "94% (17/18 new + 45/45 regression = 62/63 overall)", "frontend": "100% after OrdersList import fix"},
+  "test_credentials": "admin@socialboost.pro / Admin@12345 ; demo@socialboost.pro / Demo@12345",
+  "seed_data_creation": "Top-up of +$50 applied to demo user at module start. Tests created: 2 bulk orders, 1 refill (marked completed), 1 cancel+refund order, 1 v2-API order, 1 announcement (deleted at end), 2 API keys (deleted at end). Demo balance drifted during tests but stays positive.",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "After main agent fixes router ordering, re-run: pytest /app/backend/tests/test_iteration4.py::TestCsvExport -v. Also re-verify Export CSV button downloads a .csv from the Orders UI. Everything else iteration 4 related has been validated: v2 reseller API + API key CRUD (create/revoke/delete all work), favorites dedupe, refill/cancel flows with admin status transitions and notifications, bulk CSV pre-validation + atomic deduct, announcements broadcast to user notifications, profit aggregation. Electron scaffold exists at /app/electron (not runtime-tested per scope). Existing iteration 1–3 regression: all 45 tests still pass — nothing regressed.",
+  "rca of the issue": "Export CSV 404 RCA: in /app/backend/server.py, orders_router (which defines GET /api/orders/{order_id}) is included at line 46, extras_router (which defines GET /api/orders/export) at line 56. FastAPI resolves routes in registration order — the /{order_id} param route matches 'export' first, the handler calls db.orders.find_one({'order_id':'export', ...}) → None → raises HTTPException(404 'Order not found'). Reproduction: curl -b cookie 'https://.../api/orders/export' → 404 with detail 'Order not found'. Fix: swap include order (app.include_router(extras_router) BEFORE app.include_router(orders_router)) OR move the export route into orders_router above the /{order_id} handler. OrdersList blank-page RCA: lucide-react is a tree-shaken icon library — using an undeclared identifier raises ReferenceError on render, crashing the component subtree. Added the three missing imports; Orders page renders fully now."
+}

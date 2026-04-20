@@ -4,7 +4,8 @@ import { api, money4 } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { FaInstagram, FaFacebook, FaTiktok, FaXTwitter, FaYoutube } from "react-icons/fa6";
-import { Search, Filter } from "lucide-react";
+import { Search, Filter, Heart } from "lucide-react";
+import { toast } from "sonner";
 
 const PLATFORM_META = {
   instagram: { label: "Instagram", icon: FaInstagram, color: "text-pink-600" },
@@ -19,15 +20,30 @@ export default function ServicesBrowse() {
   const [platform, setPlatform] = useState("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
     (async () => {
       try {
-        const { data } = await api.get("/services");
-        setServices(data);
+        const [s, f] = await Promise.all([api.get("/services"), api.get("/favorites").catch(() => ({ data: [] }))]);
+        setServices(s.data);
+        setFavorites(f.data.map((x) => x.service_id));
       } catch {} finally { setLoading(false); }
     })();
   }, []);
+
+  const toggleFavorite = async (service_id) => {
+    try {
+      if (favorites.includes(service_id)) {
+        await api.delete(`/favorites/${service_id}`);
+        setFavorites(favorites.filter((x) => x !== service_id));
+      } else {
+        await api.post("/favorites", { service_id });
+        setFavorites([...favorites, service_id]);
+        toast.success("Added to favorites");
+      }
+    } catch {}
+  };
 
   const filtered = useMemo(() => {
     return services.filter((s) => {
@@ -88,7 +104,12 @@ export default function ServicesBrowse() {
                     <span className="opacity-50">/</span>
                     <span>{s.category}</span>
                   </div>
-                  <span className="font-mono text-[10px] text-muted-foreground">{s.type}</span>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => toggleFavorite(s.service_id)} className="p-1 hover:text-signal" title="Favorite" data-testid={`favorite-${s.service_id}`}>
+                      <Heart className={`w-4 h-4 ${favorites.includes(s.service_id) ? "fill-signal text-signal" : "text-muted-foreground"}`} />
+                    </button>
+                    <span className="font-mono text-[10px] text-muted-foreground">{s.type}</span>
+                  </div>
                 </div>
                 <div className="font-display text-xl mt-6 tracking-tight leading-tight">{s.name}</div>
                 {s.description && <div className="text-xs text-muted-foreground mt-2 line-clamp-2">{s.description}</div>}

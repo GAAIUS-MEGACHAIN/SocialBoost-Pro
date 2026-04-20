@@ -18,6 +18,10 @@ import PaymentSuccess from "./pages/PaymentSuccess";
 import Transactions from "./pages/Transactions";
 import AdminPanel from "./pages/admin/AdminPanel";
 import Support from "./pages/Support";
+import Profile from "./pages/Profile";
+import Refills from "./pages/Refills";
+import Favorites from "./pages/Favorites";
+import BulkUpload from "./pages/BulkUpload";
 
 function Router() {
   const location = useLocation();
@@ -46,6 +50,10 @@ function Router() {
         <Route path="/transactions" element={<Transactions />} />
         <Route path="/support" element={<Support />} />
         <Route path="/support/:ticketId" element={<Support />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/refills" element={<Refills />} />
+        <Route path="/favorites" element={<Favorites />} />
+        <Route path="/bulk-upload" element={<BulkUpload />} />
         <Route path="/payment/success" element={<PaymentSuccess />} />
       </Route>
 
