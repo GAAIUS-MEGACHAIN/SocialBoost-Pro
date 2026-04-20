@@ -1,65 +1,120 @@
 # SocialBoost Pro — PRD & Memory
 
 ## Original Problem Statement
-Launch a fully-featured Social Media Marketing (SMM) panel SaaS that lets clients place and track orders for Facebook, Instagram, Twitter, and TikTok services from a single responsive web interface. Must include: robust user management, custom roles beyond Admin/Manager/User, integrated payments (Stripe + PayPal minimum) with secure transactions and automatic order crediting, and real-time order tracking pulling status from supplier APIs with clear progress indicators. Clean code, API-ready architecture, concise setup guide.
+Launch a fully-featured SMM panel SaaS — clients place/track orders for Facebook, Instagram, Twitter, TikTok (and more) from a single responsive web interface. Must include: robust user management, custom roles beyond Admin/Manager/User, integrated payments (Stripe + PayPal), real-time order tracking pulling status from supplier APIs, clean code, API-ready architecture. Subsequent expansion: massive service catalog across 10+ platforms, reseller API, API keys, refills/cancels, favorites, CSV bulk + export, announcements, profit dashboard, in-app notifications, support tickets, and a cross-platform Electron desktop app.
 
-## User Choices (confirmed)
-- Payments: Stripe + PayPal (user to provide PayPal credentials; Stripe uses platform test key)
-- Suppliers: Generic standard SMM API integration layer (seeded with internal mock)
-- Auth: JWT email/password + Emergent-managed Google Social Login
-- Services catalog: seeded with sample services for IG/TikTok/FB/X/YouTube
-- Visual: agent-chosen (Swiss brutalist "command center" — Clash Display + Manrope, signal red accent)
+## User Choices (cumulative)
+- Payments: Stripe (active) + PayPal live sandbox (credentials provided)
+- Suppliers: Generic standard SMM API layer + seeded mock; admin "Import services" action
+- Auth: JWT (email/password) + Emergent-managed Google Social Login
+- Services catalog: ~250-item seeded catalog; admin CRUD + supplier import
+- Email: skipped — in-app notification bell instead
+- Design: agent-chosen Swiss brutalist (Clash Display / Manrope / JetBrains Mono, Signal Red accent)
+- Electron: dual-mode (Online wrapper + Standalone lowdb/JSON mode)
 
 ## Architecture
-- **Backend**: FastAPI + Motor (MongoDB async). Modular routers under `/app/backend/app/`: `auth.py`, `services_router.py`, `orders_router.py`, `payments_router.py`, `admin_router.py`, `suppliers.py`, `models.py`, `db.py`.
-- **Frontend**: React 19 + React Router 7 + Tailwind + Shadcn UI. Pages in `/app/frontend/src/pages/`; admin sub-panel in `/app/frontend/src/pages/admin/`. Auth via httpOnly cookies (access_token for JWT, session_token for Emergent Google).
-- **Integrations**: `emergentintegrations` Stripe Checkout; Emergent Google OAuth; bcrypt + pyjwt for local auth; generic HTTP (httpx) adapter for real SMM suppliers.
-- **Data collections**: users, user_sessions, roles, suppliers, services, orders, payment_transactions.
+- **Backend** (`/app/backend/app/`): FastAPI + Motor (Mongo), modular routers:
+  `auth.py`, `services_router.py`, `orders_router.py`, `payments_router.py` (Stripe + PayPal),
+  `paypal.py` (REST client), `admin_router.py`, `tickets_router.py`, `notifications_router.py`,
+  `api_v2_router.py` (reseller API + user API keys), `extras_router.py` (refills / cancels /
+  favorites / bulk CSV / export / announcements / profit), `catalog_seed.py`, `suppliers.py`.
+- **Frontend** (`/app/frontend/src/`): React 19 + React Router 7 + Shadcn UI + Tailwind.
+  Pages: Landing, Login, Register, AuthCallback, Dashboard, ServicesBrowse, NewOrder, OrdersList,
+  AddFunds, PaymentSuccess, Transactions, Support, Profile (+ API keys), Favorites, Refills,
+  BulkUpload. Admin sub-panel: Overview, Profit, Users, Roles, Services, Suppliers, Orders,
+  Refills, Transactions, Tickets, Announcements.
+- **Integrations**: Stripe (emergentintegrations), PayPal REST v2 (sandbox), Emergent Google Auth.
+- **Desktop**: `/app/electron/` — Electron main + preload + standalone express+lowdb backend
+  at `~/.socialboost-pro/db.json`. Online mode wraps hosted URL; Standalone mode is UI-demo
+  only (payments/suppliers disabled by design — they need internet regardless of storage).
 
-## User Personas
-1. **Client/Reseller** — logs in, browses catalog, places orders, tracks progress, tops up wallet.
-2. **Manager** — views users/orders, adjusts order statuses.
-3. **Admin** — full CRUD on users, custom roles, suppliers, services; views revenue.
+## Data Collections
+users · user_sessions · roles · suppliers · services (165) · orders · payment_transactions ·
+tickets · notifications · api_keys · api_logs · refills · announcements · user_prefs (favorites)
 
-## Core Requirements (static)
-- Role-based access with ability to create custom roles beyond admin/manager/user
-- Stripe + PayPal funding with secure transaction recording and idempotent balance credits
-- Real-time order tracking with supplier sync (generic standard SMM API adapter)
-- Admin CRUD on users/roles/suppliers/services/orders
-- API-ready architecture (everything exposed under `/api/*`)
+## Personas
+1. **Client / Reseller** — browses catalog, places orders (individually or bulk CSV), tracks progress,
+   requests refills, cancels, tops up wallet (Stripe or PayPal), manages API keys, opens tickets,
+   receives in-app notifications.
+2. **Manager** — reads users/orders, updates order statuses, replies to tickets.
+3. **Admin** — full CRUD on users/roles/suppliers/services, reviews profit, broadcasts announcements,
+   processes refill requests, manages tickets.
 
-## What's Been Implemented (2026-04-19)
-- **Auth**: JWT login/register/logout/me + Emergent Google session exchange. Admin + Demo user seeded.
-- **Services**: 16 seeded services across 5 platforms with real rates. Public listing endpoint with platform/category filters.
-- **Orders**: Create/list/detail/sync/sync-all. Mock supplier auto-progresses status over time. Balance is deducted atomically with refund-on-supplier-failure.
-- **Payments**: Stripe Checkout (fixed-amount whitelist 5/10/25/50/100/250/500/1000) + webhook + polling status (resilient to emergent SDK errors). PayPal placeholder ready for credentials.
-- **Wallet**: Balance + transaction history endpoints.
-- **Admin**: Stats, users (create/edit/suspend/delete/adjust-balance), roles (CRUD + protected system roles), suppliers (CRUD + protected mock), services (CRUD), orders (list + status override), transactions (list).
-- **Frontend**: Landing (brutalist with marquee/bento/pricing/CTA), split-screen Login/Register, dashboard layout with sidebar, Dashboard stats, Services browse, NewOrder form with preset + live summary, Orders list with progress bars, Add Funds (Stripe + PayPal tabs), Payment success polling page, Transactions, Admin overview, Admin Users, Roles, Services, Suppliers, Orders, Transactions.
+## What's Been Implemented
+### Core (iter 1–3)
+- JWT register/login/me/logout + Emergent Google session.
+- 16-platform seeded catalog (~165 services) with deterministic IDs; public + admin CRUD.
+- Orders: create/list/sync/sync-all with mock supplier auto-progression; notifications on create/status.
+- Payments: Stripe Checkout (fixed amounts 5/10/25/50/100/250/500/1000) + webhook + idempotent credit
+  + resilient status polling. PayPal REST v2 live sandbox with approval URL + capture flow + idempotent
+  credit + status polling; notification on paid.
+- Wallet: balance + transactions.
+- Support tickets (user + admin, reply threads, status transitions) + notifications.
+- Admin: stats, users (create/edit/suspend/delete/adjust-balance), roles (CRUD + system protection),
+  suppliers (CRUD + mock-protection + **action=services import**), services (CRUD), orders (status
+  override), transactions, tickets triage.
+- In-app notification bell (polling, mark-read).
+
+### Iteration 4 (expansion)
+- **Catalog expansion** to 16 platforms (added LinkedIn, Telegram, Spotify, Discord, Twitch, Website,
+  App, WhatsApp, Pinterest, Snapchat, Threads) with quality variants (HQ, Premium, Real, Country-targeted,
+  Drip-feed, Female, Monetized, Watch-Time, Live Viewers, Custom Comments, etc.).
+- **Reseller API v2** (`/api/v2`): SMM-panel-standard endpoints (balance, services, add, status)
+  accepting `X-Api-Key` header or `key=` body param, plus action dispatcher at `POST /api/v2`.
+- **User API keys** — up to 5 active, label, rotate, revoke, delete; usage counter + last_used_at.
+- **Favorites** — heart icon on Services; dedicated Favorites page.
+- **Refills** — eligible on Completed/Partial orders where `refill_supported`; user list page + admin review.
+- **Cancels** — eligible on Pending/In-Progress orders; auto-refund via wallet + notification.
+- **Bulk CSV upload** — atomic pre-validation + single-charge deduct + per-row results.
+- **CSV order export** — `GET /api/orders/export`.
+- **Announcements** — admin publishes → broadcasts in-app notification to every active user.
+- **Profit dashboard** — admin: totals, by-platform, top 15 services by profit.
+
+### Iteration 4 bugs found and fixed
+- Route shadowing (`/api/orders/export` masked by `/{order_id}`) — fixed by registering `extras_router`
+  before `orders_router`.
+- OrdersList missing lucide imports — fixed.
+- Added testid parity for refill/cancel buttons; notification parity for order cancel.
+
+### Electron desktop
+- `/app/electron/package.json`, `main.js`, `preload.js`, `standalone/server.js` (express + lowdb +
+  bcrypt), `standalone/services.seed.json`, `README.md`.
+- Menu toggle between Online / Standalone mode (relaunches with env var).
+- Packaging scripts: `yarn package:mac | :win | :linux`.
 
 ## Verified
-- Testing agent iteration 1: 26/27 backend + 90% frontend; 2 bugs found (Stripe status 500, NewOrder preset)
-- Fixes applied; iteration 2: 100% pass, both bugs verified fixed, end-to-end order placement works.
+- Iter 1: 26/27 + 2 bugs → fixed.
+- Iter 2: 100% green, end-to-end order flow verified.
+- Iter 3: 100% green — PayPal, tickets, notifications.
+- Iter 4: 62/63 backend (1 fixed post-test: CSV export) + 100% frontend + 45/45 regression. All fixes applied.
+
+## Credentials (seeded)
+- `admin@socialboost.pro` / `Admin@12345` (admin)
+- `demo@socialboost.pro` / `Demo@12345` (user, $50 balance)
+- Electron standalone: `admin@local` / `Admin@12345`, `demo@local` / `Demo@12345`
 
 ## Prioritized Backlog
 ### P1
-- PayPal live integration (awaiting `PAYPAL_CLIENT_ID` + `PAYPAL_SECRET`)
-- Supplier `services` auto-import: button in Admin → Suppliers to call `action=services` and import into service catalog
-- Rate limiting / brute-force lockout on `/api/auth/login`
+- **2FA** (TOTP) for admin accounts
+- **Rate limiting** on `/api/auth/login` + reseller `/api/v2/*`
+- **User-specific pricing** / reseller markup tiers (table + price override at order time)
+- **Automatic supplier failover / smart routing** (pick cheapest-eligible supplier per service)
+- **Webhook support for clients** (order status change callbacks)
 
 ### P2
-- Support ticket system (UI + endpoints)
-- Email notifications (order status, payment receipts) via Resend/SendGrid
-- Drip-feed + Custom-comments advanced service types
-- API keys for clients (for programmatic order placement)
-- Profit reports (service rate vs supplier_rate)
+- Email notifications (Resend/SendGrid) when user opts in
+- Admin activity logs + system health dashboard
+- Multi-currency (current: USD only)
+- Fraud detection basics (IP velocity, card decline clustering)
+- Drip-feed scheduler (bg job dispatches sub-batches over time)
 
 ### P3
-- Multi-currency / FX
-- Referral / affiliate system
-- Supplier auto-markup rules
+- Plugin system (modular supplier adapters)
+- Multi-language UI (i18n)
+- Crypto payments (Stripe Crypto / Coinbase Commerce)
 
 ## Next Tasks
-1. Add PayPal credentials when provided → switch placeholder into live flow
-2. Add supplier services auto-import action in admin UI
-3. Optional: add rate limiter on login endpoint and silence 401 on initial /auth/me
+1. Deploy (user explicitly flagged removing "Made with Emergent" — needs Deploy, 50 credits/mo).
+2. Wire real SMM supplier credentials in Admin → Suppliers → "Import services".
+3. Bundle `frontend/build` into `electron/web-dist` for true offline standalone packaging.
+4. Swap PayPal `PAYPAL_MODE` from `sandbox` to `live` when going to production.

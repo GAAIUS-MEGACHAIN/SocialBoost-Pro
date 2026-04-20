@@ -80,6 +80,17 @@ async def cancel_order(order_id: str, user: dict = Depends(require_active)):
     )
     # Refund charge to user
     await db.users.update_one({"user_id": user["user_id"]}, {"$inc": {"balance": float(order["charge"])}})
+    # Notification for parity with refill status notifications
+    await db.notifications.insert_one({
+        "notif_id": f"ntf_{uuid.uuid4().hex[:12]}",
+        "user_id": user["user_id"],
+        "type": "order",
+        "title": "Order canceled",
+        "message": f"Refunded ${float(order['charge']):.2f} for order {order_id[-8:].upper()}",
+        "link": "/orders",
+        "read": False,
+        "created_at": now_utc().isoformat(),
+    })
     await db.payment_transactions.insert_one({
         "tx_id": f"tx_{uuid.uuid4().hex[:12]}",
         "user_id": user["user_id"],

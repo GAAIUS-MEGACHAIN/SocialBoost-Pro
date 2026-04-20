@@ -149,12 +149,12 @@ export default function OrdersList() {
                           <RefreshCw className="w-3.5 h-3.5" />
                         </button>
                         {["Completed", "Partial"].includes(o.status) && (
-                          <button onClick={() => requestRefill(o)} className="p-1.5 hover:bg-muted rounded-sm" title="Refill" data-testid={`refill-order-${o.order_id}`}>
+                          <button onClick={() => requestRefill(o)} className="p-1.5 hover:bg-muted rounded-sm" title="Refill" data-testid={`orders-refill-${o.order_id}`}>
                             <RotateCcw className="w-3.5 h-3.5" />
                           </button>
                         )}
                         {["Pending", "In Progress"].includes(o.status) && (
-                          <button onClick={() => cancelOrd(o)} className="p-1.5 hover:bg-red-50 hover:text-red-700 rounded-sm" title="Cancel" data-testid={`cancel-order-${o.order_id}`}>
+                          <button onClick={() => cancelOrd(o)} className="p-1.5 hover:bg-red-50 hover:text-red-700 rounded-sm" title="Cancel" data-testid={`orders-cancel-${o.order_id}`}>
                             <XCircle className="w-3.5 h-3.5" />
                           </button>
                         )}

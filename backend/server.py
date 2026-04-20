@@ -43,6 +43,8 @@ async def health():
 
 app.include_router(auth_router)
 app.include_router(services_router)
+app.include_router(extras_router)
+app.include_router(extras_admin_router)
 app.include_router(orders_router)
 app.include_router(payments_router)
 app.include_router(webhook_router)
@@ -53,8 +55,6 @@ app.include_router(tickets_admin_router)
 app.include_router(notifications_router)
 app.include_router(api_v2_router)
 app.include_router(api_keys_router)
-app.include_router(extras_router)
-app.include_router(extras_admin_router)
 
 origins_raw = os.environ.get("CORS_ORIGINS", "*")
 origins = [o.strip() for o in origins_raw.split(",") if o.strip()]
