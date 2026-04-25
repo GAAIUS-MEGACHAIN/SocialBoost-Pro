@@ -49,11 +49,21 @@ async def list_accounts(user: dict = Depends(require_active)):
 @router.post("/me/accounts")
 async def add_account(data: AccountCreate, user: dict = Depends(require_active)):
     db = get_db()
+    handle = data.handle.strip()
+    platform = data.platform.lower()
+    # Prevent duplicate (same user + platform + handle, case-insensitive)
+    existing = await db.user_accounts.find_one({
+        "user_id": user["user_id"],
+        "platform": platform,
+        "handle": {"$regex": f"^{handle}$", "$options": "i"},
+    }, {"_id": 0, "account_id": 1})
+    if existing:
+        raise HTTPException(status_code=409, detail="This handle is already tracked")
     doc = {
         "account_id": f"acc_{uuid.uuid4().hex[:12]}",
         "user_id": user["user_id"],
-        "platform": data.platform.lower(),
-        "handle": data.handle.strip(),
+        "platform": platform,
+        "handle": handle,
         "link": (data.link or "").strip() or None,
         "label": (data.label or "").strip() or None,
         "created_at": now_utc().isoformat(),

@@ -88,7 +88,7 @@ export default function MyAccounts() {
                       <div className="font-mono text-sm mt-0.5 truncate max-w-[180px]">{a.handle}</div>
                     </div>
                   </div>
-                  <button onClick={() => del(a)} className="p-1.5 hover:bg-red-50 hover:text-red-700 rounded-sm" data-testid={`delete-account-${a.account_id}`}><Trash2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => del(a)} className="p-1.5 hover:bg-red-50 hover:text-red-700 rounded-sm" data-testid={`delete-account-${a.account_id}`} title="Remove"><Trash2 className="w-3.5 h-3.5" /></button>
                 </div>
                 {a.label && <div className="mt-3 text-xs text-muted-foreground">{a.label}</div>}
                 <div className="grid grid-cols-2 gap-3 mt-5 pt-5 border-t border-border">
