@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { FaInstagram, FaFacebook, FaTiktok, FaXTwitter, FaYoutube } from "react-icons/fa6";
 import { ArrowRight, Shield, Zap, BarChart3, Layers3, Globe2, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import AIChatWidget from "../components/AIChatWidget";
 
 const Platforms = [
   { icon: FaInstagram, label: "Instagram", slug: "instagram" },
@@ -244,6 +245,7 @@ export default function Landing() {
           </div>
         </div>
       </footer>
+      <AIChatWidget context="landing" />
     </div>
   );
 }

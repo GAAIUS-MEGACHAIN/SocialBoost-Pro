@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Wallet, ListOrdered, CheckCircle2, Clock, RefreshCw } from "lucide-react";
 import { FaInstagram, FaFacebook, FaTiktok, FaXTwitter, FaYoutube, FaLinkedin, FaTelegram, FaSpotify } from "react-icons/fa6";
 import { toast } from "sonner";
+import AIChatWidget from "../components/AIChatWidget";
+import AIInsightsCard from "../components/AIInsightsCard";
 
 const QUICK_PLATFORMS = [
   { slug: "instagram", label: "Instagram", icon: FaInstagram, color: "from-fuchsia-600 to-pink-500" },
@@ -90,6 +92,9 @@ export default function Dashboard() {
         })}
       </div>
 
+      {/* AI Insights — additive */}
+      <AIInsightsCard />
+
       {/* Platform quick-access */}
       <div>
         <div className="flex items-end justify-between mb-4">
@@ -162,6 +167,7 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      <AIChatWidget context="dashboard" />
     </div>
   );
 }

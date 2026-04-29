@@ -21,6 +21,7 @@ from app.api_v2_router import router as api_v2_router, keys_router as api_keys_r
 from app.extras_router import router as extras_router, admin_router as extras_admin_router
 from app.catalog_seed import seed_expanded_catalog
 from app.accounts_router import router as accounts_router
+from app.ai_router import router as ai_router
 from app.suppliers import seed_default_supplier_and_services, seed_default_roles
 
 logging.basicConfig(
@@ -57,6 +58,7 @@ app.include_router(notifications_router)
 app.include_router(api_v2_router)
 app.include_router(api_keys_router)
 app.include_router(accounts_router)
+app.include_router(ai_router)
 
 origins_raw = os.environ.get("CORS_ORIGINS", "*")
 origins = [o.strip() for o in origins_raw.split(",") if o.strip()]
